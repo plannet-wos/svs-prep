@@ -154,10 +154,19 @@ export class SurveyComponent {
     ).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
-  /** FC8-maxed players have nothing left to build — RFC/FC/construction speedups don't apply. */
+  /**
+   * FC8-maxed players have nothing left to build — RFC, FC, construction
+   * speedups, and general speedup days allocated to construction all
+   * don't apply.
+   */
   onFurnaceLevelChange(level: string): void {
     const maxed = level === FC8_MAXED;
-    const fields = [this.form.controls.rfc, this.form.controls.fc, this.form.controls.constructionSpeedups];
+    const fields = [
+      this.form.controls.rfc,
+      this.form.controls.fc,
+      this.form.controls.constructionSpeedups,
+      this.form.controls.genDaysConstruction,
+    ];
     for (const field of fields) {
       if (maxed) {
         field.setValue(0);

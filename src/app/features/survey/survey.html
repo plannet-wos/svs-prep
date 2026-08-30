@@ -155,7 +155,10 @@
         }
 
         @if (form.controls.rfc.disabled) {
-          <p class="field-hint">You're FC8 maxed, so RFC / FC / construction speedups don't apply.</p>
+          <p class="field-hint">
+            You're FC8 maxed, so RFC, FC, and anything construction-related below (general
+            speedup days and construction speedups) don't apply — grayed out and zeroed.
+          </p>
         }
         <div class="grid two spaced">
           <mat-form-field appearance="outline">
