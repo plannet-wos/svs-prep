@@ -12,7 +12,16 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PARTICIPATION_OPTIONS, ULTRA_CARD_OPTIONS } from '../../core/config/svs-round.config';
-import { SvsFormWithId, formStatus, furnaceLevelOptions, maxedFurnaceLabel } from '../../core/models/svs-form.model';
+import {
+  SvsFormWithId,
+  Weekday,
+  dateForBuffDay,
+  formStatus,
+  formatShortDate,
+  furnaceLevelOptions,
+  maxedFurnaceLabel,
+  prepWeekMonday,
+} from '../../core/models/svs-form.model';
 import { SvsSubmission } from '../../core/models/svs-submission.model';
 import { SvsFormService } from '../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
@@ -138,6 +147,28 @@ export class SurveyComponent {
   get furnaceLevelOptions(): readonly string[] {
     const form = this.openForm();
     return form ? furnaceLevelOptions(form.highestFcLevel) : [];
+  }
+
+  /** "31. August – 4. September" — the Monday-Friday prep week, always the week before the battle. */
+  get prepWeekLabel(): string {
+    const form = this.openForm();
+    if (!form) return '';
+    const monday = prepWeekMonday(form.battleDate);
+    const friday = new Date(monday);
+    friday.setDate(friday.getDate() + 4);
+    return `${formatShortDate(monday)} – ${formatShortDate(friday)}`;
+  }
+
+  /** "12. September" — compact battle date for the "SvS battle" card title. */
+  get battleShortDateLabel(): string {
+    const form = this.openForm();
+    return form ? formatShortDate(new Date(`${form.battleDate}T00:00:00`)) : '';
+  }
+
+  /** "Monday, 7. September" — a buff day's exact calendar date within the prep week. */
+  buffDayLabel(day: Weekday): string {
+    const form = this.openForm();
+    return form ? `${day}, ${formatShortDate(dateForBuffDay(form.battleDate, day))}` : day;
   }
 
   /** FC8/FC10/etc-maxed players have nothing left to build — RFC, FC, and construction days don't apply. */

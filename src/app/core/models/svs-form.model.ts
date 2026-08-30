@@ -59,3 +59,46 @@ export function furnaceLevelOptions(level: FcLevel): [string, string, string] {
 export function maxedFurnaceLabel(level: FcLevel): string {
   return `FC${level} maxed`;
 }
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/** Battle day must be a Saturday — enforced by the admin editor's date picker (see form-editor.ts). */
+export function isSaturday(date: Date | null): boolean {
+  return date?.getDay() === 6;
+}
+
+/**
+ * The prep week (buff days included) is always the calendar week — Monday through Sunday —
+ * immediately before the battle's own week. A Saturday battle date is always 12 days after that
+ * week's Monday (5 days to reach its own week's Saturday, plus 7 for the week before it).
+ */
+export function prepWeekMonday(battleDate: string): Date {
+  const monday = new Date(`${battleDate}T00:00:00`);
+  monday.setDate(monday.getDate() - 12);
+  return monday;
+}
+
+/** The exact calendar date a buff day (e.g. "Tuesday") falls on within the prep week. */
+export function dateForBuffDay(battleDate: string, day: Weekday): Date {
+  const date = prepWeekMonday(battleDate);
+  date.setDate(date.getDate() + WEEKDAY_OPTIONS.indexOf(day));
+  return date;
+}
+
+/** "12. September" — no year, the compact date style used throughout the survey page. */
+export function formatShortDate(date: Date): string {
+  return `${date.getDate()}. ${MONTH_NAMES[date.getMonth()]}`;
+}
