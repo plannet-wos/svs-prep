@@ -98,11 +98,6 @@
             <input matInput type="number" min="0" formControlName="fc" />
           </mat-form-field>
         </div>
-
-        <mat-form-field appearance="outline" class="full">
-          <mat-label>How many general speedups do you have? (in days)</mat-label>
-          <input matInput type="number" min="0" formControlName="generalSpeedups" />
-        </mat-form-field>
       </mat-card-content>
     </mat-card>
 
@@ -116,14 +111,14 @@
         >
       </mat-card-header>
       <mat-card-content>
-        <app-day-availability-picker
-          formControlName="availableTimesConstruction"
-          [minSlots]="minTimeSlots"
-        />
         <mat-form-field appearance="outline" class="full">
           <mat-label>How many days will you use for Construction?</mat-label>
           <input matInput type="number" min="0" formControlName="daysConstruction" />
         </mat-form-field>
+        <app-day-availability-picker
+          formControlName="availableTimesConstruction"
+          [minSlots]="minTimeSlots"
+        />
       </mat-card-content>
     </mat-card>
 
@@ -137,14 +132,14 @@
         >
       </mat-card-header>
       <mat-card-content>
-        <app-day-availability-picker
-          formControlName="availableTimesResearch"
-          [minSlots]="minTimeSlots"
-        />
         <mat-form-field appearance="outline" class="full">
           <mat-label>How many days will you use for Research?</mat-label>
           <input matInput type="number" min="0" formControlName="daysResearch" />
         </mat-form-field>
+        <app-day-availability-picker
+          formControlName="availableTimesResearch"
+          [minSlots]="minTimeSlots"
+        />
       </mat-card-content>
     </mat-card>
 
@@ -158,14 +153,14 @@
         >
       </mat-card-header>
       <mat-card-content>
-        <app-day-availability-picker
-          formControlName="availableTimesTraining"
-          [minSlots]="minTimeSlots"
-        />
         <mat-form-field appearance="outline" class="full">
           <mat-label>How many days will you use for Troop Training?</mat-label>
           <input matInput type="number" min="0" formControlName="daysTraining" />
         </mat-form-field>
+        <app-day-availability-picker
+          formControlName="availableTimesTraining"
+          [minSlots]="minTimeSlots"
+        />
       </mat-card-content>
     </mat-card>
 

@@ -35,7 +35,6 @@ export interface SvsSubmission {
   furnaceLevel: string;
   rfc: number;
   fc: number;
-  generalSpeedups: number;
 
   participation: string;
   ultraValueCard: string;
@@ -66,7 +65,6 @@ export const SVS_SUBMISSION_FIELD_LABELS: Record<
   furnaceLevel: 'Current Furnace Level',
   rfc: 'Refined FC (RFC)',
   fc: 'Normal FC',
-  generalSpeedups: 'General speedups',
   participation: 'SvS battle participation',
   ultraValueCard: 'Ultra Value Monthly Card',
   fairProcess: 'Finds process fair',

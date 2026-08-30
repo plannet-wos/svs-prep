@@ -89,7 +89,6 @@ export class SurveyComponent {
     furnaceLevel: ['', Validators.required],
     rfc: [0, [Validators.required, Validators.min(0)]],
     fc: [0, [Validators.required, Validators.min(0)]],
-    generalSpeedups: [0, [Validators.required, Validators.min(0)]],
 
     participation: ['', Validators.required],
     ultraValueCard: ['', Validators.required],
@@ -155,7 +154,6 @@ export class SurveyComponent {
       furnaceLevel: v.furnaceLevel,
       rfc: v.rfc,
       fc: v.fc,
-      generalSpeedups: v.generalSpeedups,
       participation: v.participation,
       ultraValueCard: v.ultraValueCard,
       fairProcess: v.fairProcess,
@@ -203,7 +201,6 @@ export class SurveyComponent {
         furnaceLevel: '',
         rfc: 0,
         fc: 0,
-        generalSpeedups: 0,
         participation: '',
         ultraValueCard: '',
         fairProcess: '',
