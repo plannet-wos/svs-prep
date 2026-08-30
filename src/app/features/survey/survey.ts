@@ -3,7 +3,6 @@ import { FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -34,7 +33,6 @@ function requireAtLeastOneTime(control: { value: string[] }): ValidationErrors |
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
-    MatCheckboxModule,
     MatRadioModule,
     MatButtonModule,
     MatIconModule,
@@ -58,6 +56,9 @@ export class SurveyComponent {
   readonly submitting = signal(false);
   readonly checkingPlayerId = signal(false);
   readonly existingSubmission = signal<SvsSubmission | null>(null);
+
+  /** Best-effort — this is the browser/OS timezone, shown so players know what the "local" column means. */
+  readonly localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   readonly form = this.fb.group({
     allianceAndName: ['', Validators.required],
@@ -91,6 +92,35 @@ export class SurveyComponent {
 
   isTimeChecked(block: string): boolean {
     return this.form.controls.availableTimes.value.includes(block);
+  }
+
+  selectAllTimes(): void {
+    const control = this.form.controls.availableTimes;
+    control.setValue([...this.timeBlocks]);
+    control.markAsTouched();
+  }
+
+  clearAllTimes(): void {
+    const control = this.form.controls.availableTimes;
+    control.setValue([]);
+    control.markAsTouched();
+  }
+
+  timesSelectedCount(): number {
+    return this.form.controls.availableTimes.value.length;
+  }
+
+  /** e.g. "09 - 12 UTC" -> "2:00 – 5:00 AM" in the browser's local timezone. */
+  localRangeLabel(block: string): string {
+    const match = block.match(/^(\d{2}) - (\d{2})/);
+    if (!match) return '';
+    const [, startStr, endStr] = match;
+    const today = new Date();
+    const fmt = (hour: number) =>
+      new Date(
+        Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), hour),
+      ).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return `${fmt(Number(startStr))} – ${fmt(Number(endStr))}`;
   }
 
   async onPlayerIdBlur(): Promise<void> {

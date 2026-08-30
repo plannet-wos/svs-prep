@@ -60,19 +60,34 @@
       <mat-card-header>
         <mat-card-title>Availability</mat-card-title>
         <mat-card-subtitle
-          >Choose every 3-hour UTC block that works for you — select as many as you
-          can.</mat-card-subtitle
+          >Tap every 3-hour UTC block that works for you — the more you select, the better your
+          chance of getting a slot. Local times are for {{ localTimezone }}, double-check they
+          look right.</mat-card-subtitle
         >
       </mat-card-header>
       <mat-card-content>
-        <div class="time-blocks">
+        <div class="time-actions">
+          <button mat-stroked-button type="button" (click)="selectAllTimes()">
+            <mat-icon>done_all</mat-icon> Select all
+          </button>
+          <button mat-stroked-button type="button" (click)="clearAllTimes()">
+            <mat-icon>clear</mat-icon> Clear
+          </button>
+          <span class="time-count">{{ timesSelectedCount() }} of {{ timeBlocks.length }} selected</span>
+        </div>
+
+        <div class="time-chip-grid">
           @for (block of timeBlocks; track block) {
-            <mat-checkbox
-              [checked]="isTimeChecked(block)"
-              (change)="toggleTime(block, $event.checked)"
+            <button
+              type="button"
+              class="time-chip"
+              [class.selected]="isTimeChecked(block)"
+              [attr.aria-pressed]="isTimeChecked(block)"
+              (click)="toggleTime(block, !isTimeChecked(block))"
             >
-              {{ block }}
-            </mat-checkbox>
+              <span class="utc">{{ block }}</span>
+              <span class="local">{{ localRangeLabel(block) }} local</span>
+            </button>
           }
         </div>
         @if (
