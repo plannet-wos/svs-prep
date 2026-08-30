@@ -1,0 +1,55 @@
+<div class="picker">
+  <div class="time-actions">
+    <button mat-stroked-button type="button" (click)="selectAll()">
+      <mat-icon>done_all</mat-icon> Select all
+    </button>
+    <button mat-stroked-button type="button" (click)="clearAll()">
+      <mat-icon>clear</mat-icon> Clear
+    </button>
+    <span class="time-count">{{ value.length }} of 48 slots selected</span>
+  </div>
+
+  <div class="slot-groups">
+    @for (group of slotGroups; track group.label) {
+      <div class="slot-group">
+        <button
+          type="button"
+          class="group-toggle"
+          [class.all]="groupState(group) === 'all'"
+          [class.some]="groupState(group) === 'some'"
+          (click)="toggleGroup(group)"
+        >
+          <mat-icon>{{
+            groupState(group) === 'all'
+              ? 'check_box'
+              : groupState(group) === 'some'
+                ? 'indeterminate_check_box'
+                : 'check_box_outline_blank'
+          }}</mat-icon>
+          <span class="group-label">{{ group.label }}</span>
+          <span class="group-local">{{ localGroupRangeLabel(group) }} local</span>
+        </button>
+        <div class="slot-row">
+          @for (slot of group.slots; track slot) {
+            <button
+              type="button"
+              class="slot-chip"
+              [class.selected]="isSlotChecked(slot)"
+              [attr.aria-pressed]="isSlotChecked(slot)"
+              [matTooltip]="localSlotLabel(slot) + ' local'"
+              (click)="toggleSlot(slot, !isSlotChecked(slot))"
+            >
+              {{ slot }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (showError) {
+    <p class="field-error">
+      Select at least {{ minSlots }} time slots ({{ value.length }} of {{ minSlots }} selected).
+    </p>
+  }
+</div>

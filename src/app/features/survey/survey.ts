@@ -10,8 +10,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { ALL_SLOTS, SLOT_GROUPS, SlotGroup } from '../../core/config/slot-grid';
 import {
   FURNACE_LEVEL_OPTIONS,
   PARTICIPATION_OPTIONS,
@@ -20,9 +18,10 @@ import {
 } from '../../core/config/svs-round.config';
 import { SvsSubmission } from '../../core/models/svs-submission.model';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
+import { DayAvailabilityPickerComponent } from './day-availability-picker/day-availability-picker';
 import { DiffDialogComponent } from './diff-dialog/diff-dialog';
 
-/** Players need a realistic spread of options for the assignment algorithm to work with. */
+/** Players need a realistic spread of options for the assignment algorithm to work with, per day. */
 export const MIN_TIME_SLOTS = 5;
 
 function requireMinTimes(min: number) {
@@ -30,7 +29,7 @@ function requireMinTimes(min: number) {
     (control.value?.length ?? 0) >= min ? null : { minTimes: true };
 }
 
-/** rfc/fc/constructionSpeedups don't matter once a player is FC8 maxed — nothing left to build. */
+/** RFC/FC/construction-days don't matter once a player is FC8 maxed — nothing left to build. */
 const FC8_MAXED = 'FC8 maxed';
 
 /** Must start with a 3-character alliance tag in brackets, e.g. "[HOC] plannet". */
@@ -51,7 +50,7 @@ const PLAYER_ID_PATTERN = /^[0-9]{9}$/;
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatTooltipModule,
+    DayAvailabilityPickerComponent,
   ],
   templateUrl: './survey.html',
   styleUrl: './survey.scss',
@@ -64,7 +63,6 @@ export class SurveyComponent {
 
   readonly battleDateLabel = SVS_BATTLE_DATE_LABEL;
   readonly minTimeSlots = MIN_TIME_SLOTS;
-  readonly slotGroups = SLOT_GROUPS;
   readonly furnaceLevelOptions = FURNACE_LEVEL_OPTIONS;
   readonly participationOptions = PARTICIPATION_OPTIONS;
   readonly ultraCardOptions = ULTRA_CARD_OPTIONS;
@@ -73,24 +71,26 @@ export class SurveyComponent {
   readonly checkingPlayerId = signal(false);
   readonly existingSubmission = signal<SvsSubmission | null>(null);
 
-  /** Best-effort — this is the browser/OS timezone, shown so players know what the "local" column means. */
+  /** Shown once in the page intro — each day's picker shows times in this same browser timezone. */
   readonly localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   readonly form = this.fb.group({
     allianceAndName: ['', [Validators.required, Validators.pattern(ALLIANCE_TAG_PATTERN)]],
     playerId: ['', [Validators.required, Validators.pattern(PLAYER_ID_PATTERN)]],
-    availableTimes: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
-    otherAvailableTime: [''],
+
+    availableTimesConstruction: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
+    availableTimesResearch: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
+    availableTimesTraining: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
+
+    daysConstruction: [0, [Validators.required, Validators.min(0)]],
+    daysResearch: [0, [Validators.required, Validators.min(0)]],
+    daysTraining: [0, [Validators.required, Validators.min(0)]],
+
     furnaceLevel: ['', Validators.required],
     rfc: [0, [Validators.required, Validators.min(0)]],
     fc: [0, [Validators.required, Validators.min(0)]],
     generalSpeedups: [0, [Validators.required, Validators.min(0)]],
-    genDaysConstruction: [0, [Validators.required, Validators.min(0)]],
-    genDaysResearch: [0, [Validators.required, Validators.min(0)]],
-    genDaysTraining: [0, [Validators.required, Validators.min(0)]],
-    constructionSpeedups: [0, [Validators.required, Validators.min(0)]],
-    trainingSpeedups: [0, [Validators.required, Validators.min(0)]],
-    researchSpeedups: [0, [Validators.required, Validators.min(0)]],
+
     participation: ['', Validators.required],
     ultraValueCard: ['', Validators.required],
     fairProcess: ['' as '' | 'Yes' | 'No', Validators.required],
@@ -99,80 +99,10 @@ export class SurveyComponent {
     feedback: [''],
   });
 
-  private setSlots(slots: readonly string[], selected: boolean): void {
-    const control = this.form.controls.availableTimes;
-    const current = new Set(control.value);
-    for (const slot of slots) {
-      if (selected) current.add(slot);
-      else current.delete(slot);
-    }
-    control.setValue(Array.from(current));
-    control.markAsTouched();
-  }
-
-  toggleSlot(slot: string, checked: boolean): void {
-    this.setSlots([slot], checked);
-  }
-
-  isSlotChecked(slot: string): boolean {
-    return this.form.controls.availableTimes.value.includes(slot);
-  }
-
-  /** Whole-group toggle: fills every slot in the group, unless it's already full — then it clears the group. */
-  toggleGroup(group: SlotGroup): void {
-    this.setSlots(group.slots, this.groupState(group) !== 'all');
-  }
-
-  groupState(group: SlotGroup): 'all' | 'some' | 'none' {
-    const selected = group.slots.filter((s) => this.isSlotChecked(s)).length;
-    if (selected === 0) return 'none';
-    return selected === group.slots.length ? 'all' : 'some';
-  }
-
-  selectAllTimes(): void {
-    this.setSlots(ALL_SLOTS, true);
-  }
-
-  clearAllTimes(): void {
-    const control = this.form.controls.availableTimes;
-    control.setValue([]);
-    control.markAsTouched();
-  }
-
-  timesSelectedCount(): number {
-    return this.form.controls.availableTimes.value.length;
-  }
-
-  /** e.g. "09 - 12 UTC" -> "2:00 – 5:00 AM" in the browser's local timezone. */
-  localGroupRangeLabel(group: SlotGroup): string {
-    const match = group.label.match(/^(\d{2}) - (\d{2})/);
-    if (!match) return '';
-    const [, startStr, endStr] = match;
-    return `${this.localHourLabel(Number(startStr))} – ${this.localHourLabel(Number(endStr))}`;
-  }
-
-  /** e.g. "09:00" -> "11:00 AM" in the browser's local timezone (for the per-slot tooltip). */
-  localSlotLabel(slot: string): string {
-    const [h, m] = slot.split(':').map(Number);
-    const today = new Date();
-    return new Date(
-      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), h, m),
-    ).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  }
-
-  /**
-   * FC8-maxed players have nothing left to build — RFC, FC, construction
-   * speedups, and general speedup days allocated to construction all
-   * don't apply.
-   */
+  /** FC8-maxed players have nothing left to build — RFC, FC, and construction days don't apply. */
   onFurnaceLevelChange(level: string): void {
     const maxed = level === FC8_MAXED;
-    const fields = [
-      this.form.controls.rfc,
-      this.form.controls.fc,
-      this.form.controls.constructionSpeedups,
-      this.form.controls.genDaysConstruction,
-    ];
+    const fields = [this.form.controls.rfc, this.form.controls.fc, this.form.controls.daysConstruction];
     for (const field of fields) {
       if (maxed) {
         field.setValue(0);
@@ -181,13 +111,6 @@ export class SurveyComponent {
         field.enable();
       }
     }
-  }
-
-  private localHourLabel(hour: number): string {
-    const today = new Date();
-    return new Date(
-      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), hour),
-    ).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
   async onPlayerIdBlur(): Promise<void> {
@@ -223,18 +146,16 @@ export class SurveyComponent {
     return {
       allianceAndName: v.allianceAndName.trim(),
       playerId: v.playerId.trim(),
-      availableTimes: v.availableTimes,
-      otherAvailableTime: v.otherAvailableTime.trim(),
+      availableTimesConstruction: v.availableTimesConstruction,
+      availableTimesResearch: v.availableTimesResearch,
+      availableTimesTraining: v.availableTimesTraining,
+      daysConstruction: v.daysConstruction,
+      daysResearch: v.daysResearch,
+      daysTraining: v.daysTraining,
       furnaceLevel: v.furnaceLevel,
       rfc: v.rfc,
       fc: v.fc,
       generalSpeedups: v.generalSpeedups,
-      genDaysConstruction: v.genDaysConstruction,
-      genDaysResearch: v.genDaysResearch,
-      genDaysTraining: v.genDaysTraining,
-      constructionSpeedups: v.constructionSpeedups,
-      trainingSpeedups: v.trainingSpeedups,
-      researchSpeedups: v.researchSpeedups,
       participation: v.participation,
       ultraValueCard: v.ultraValueCard,
       fairProcess: v.fairProcess,
@@ -273,18 +194,16 @@ export class SurveyComponent {
       this.form.reset({
         allianceAndName: '',
         playerId: '',
-        availableTimes: [],
-        otherAvailableTime: '',
+        availableTimesConstruction: [],
+        availableTimesResearch: [],
+        availableTimesTraining: [],
+        daysConstruction: 0,
+        daysResearch: 0,
+        daysTraining: 0,
         furnaceLevel: '',
         rfc: 0,
         fc: 0,
         generalSpeedups: 0,
-        genDaysConstruction: 0,
-        genDaysResearch: 0,
-        genDaysTraining: 0,
-        constructionSpeedups: 0,
-        trainingSpeedups: 0,
-        researchSpeedups: 0,
         participation: '',
         ultraValueCard: '',
         fairProcess: '',

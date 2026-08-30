@@ -4,8 +4,9 @@
     <p>
       Fill this in once per SvS round so we can build the appointment schedule for
       <strong>Construction</strong> (Monday), <strong>Research</strong> (Tuesday) and
-      <strong>Troop Training</strong> (Thursday). Times are picked by preference and speedups
-      available — the more time blocks you select, the better your chance of getting a slot.
+      <strong>Troop Training</strong> (Thursday). Each day has its own availability below — the
+      more slots you select, the better your chance of getting a slot on that day. Local times
+      shown are for {{ localTimezone }} — double-check that matches yours.
     </p>
   </header>
 
@@ -61,85 +62,6 @@
       }
     </mat-card>
 
-    <!-- Availability -->
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Availability</mat-card-title>
-        <mat-card-subtitle
-          >Tap individual 30-min slots for precise availability, or tap a block's header to
-          select/clear the whole 3 hours at once. Select at least {{ minTimeSlots }} slots — the
-          more you select, the better your chance of getting a slot. Local times are for
-          {{ localTimezone }}, double-check they look right.</mat-card-subtitle
-        >
-      </mat-card-header>
-      <mat-card-content>
-        <div class="time-actions">
-          <button mat-stroked-button type="button" (click)="selectAllTimes()">
-            <mat-icon>done_all</mat-icon> Select all
-          </button>
-          <button mat-stroked-button type="button" (click)="clearAllTimes()">
-            <mat-icon>clear</mat-icon> Clear
-          </button>
-          <span class="time-count">{{ timesSelectedCount() }} of 48 slots selected</span>
-        </div>
-
-        <div class="slot-groups">
-          @for (group of slotGroups; track group.label) {
-            <div class="slot-group">
-              <button
-                type="button"
-                class="group-toggle"
-                [class.all]="groupState(group) === 'all'"
-                [class.some]="groupState(group) === 'some'"
-                (click)="toggleGroup(group)"
-              >
-                <mat-icon>{{
-                  groupState(group) === 'all'
-                    ? 'check_box'
-                    : groupState(group) === 'some'
-                      ? 'indeterminate_check_box'
-                      : 'check_box_outline_blank'
-                }}</mat-icon>
-                <span class="group-label">{{ group.label }}</span>
-                <span class="group-local">{{ localGroupRangeLabel(group) }} local</span>
-              </button>
-              <div class="slot-row">
-                @for (slot of group.slots; track slot) {
-                  <button
-                    type="button"
-                    class="slot-chip"
-                    [class.selected]="isSlotChecked(slot)"
-                    [attr.aria-pressed]="isSlotChecked(slot)"
-                    [matTooltip]="localSlotLabel(slot) + ' local'"
-                    (click)="toggleSlot(slot, !isSlotChecked(slot))"
-                  >
-                    {{ slot }}
-                  </button>
-                }
-              </div>
-            </div>
-          }
-        </div>
-        @if (
-          form.controls.availableTimes.invalid && form.controls.availableTimes.touched
-        ) {
-          <p class="field-error">
-            Select at least {{ minTimeSlots }} time slots ({{ timesSelectedCount() }} of
-            {{ minTimeSlots }} selected).
-          </p>
-        }
-
-        <mat-form-field appearance="outline" class="full">
-          <mat-label>Other time (optional)</mat-label>
-          <input
-            matInput
-            formControlName="otherAvailableTime"
-            placeholder="e.g. 03:30 - 04:30 UTC"
-          />
-        </mat-form-field>
-      </mat-card-content>
-    </mat-card>
-
     <!-- Furnace & speedups -->
     <mat-card>
       <mat-card-header>
@@ -162,8 +84,8 @@
 
         @if (form.controls.rfc.disabled) {
           <p class="field-hint">
-            You're FC8 maxed, so RFC, FC, and anything construction-related below (general
-            speedup days and construction speedups) don't apply — grayed out and zeroed.
+            You're FC8 maxed, so RFC, FC, and days for Construction below don't apply — grayed
+            out and zeroed.
           </p>
         }
         <div class="grid two spaced">
@@ -181,40 +103,69 @@
           <mat-label>How many general speedups do you have? (in days)</mat-label>
           <input matInput type="number" min="0" formControlName="generalSpeedups" />
         </mat-form-field>
+      </mat-card-content>
+    </mat-card>
 
-        <p class="section-label">
-          How many days of your general speedups will you use for each buff?
-        </p>
-        <div class="grid three">
-          <mat-form-field appearance="outline">
-            <mat-label>Construction</mat-label>
-            <input matInput type="number" min="0" formControlName="genDaysConstruction" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Research</mat-label>
-            <input matInput type="number" min="0" formControlName="genDaysResearch" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Troop Training</mat-label>
-            <input matInput type="number" min="0" formControlName="genDaysTraining" />
-          </mat-form-field>
-        </div>
+    <!-- Monday — Construction -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Monday — Construction</mat-card-title>
+        <mat-card-subtitle
+          >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
+          speedups you'll use for Construction.</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <app-day-availability-picker
+          formControlName="availableTimesConstruction"
+          [minSlots]="minTimeSlots"
+        />
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>How many days will you use for Construction?</mat-label>
+          <input matInput type="number" min="0" formControlName="daysConstruction" />
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
 
-        <p class="section-label">How many specific (buff-type) speedups do you have? (in days)</p>
-        <div class="grid three">
-          <mat-form-field appearance="outline">
-            <mat-label>Construction speedups</mat-label>
-            <input matInput type="number" min="0" formControlName="constructionSpeedups" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Troop training speedups</mat-label>
-            <input matInput type="number" min="0" formControlName="trainingSpeedups" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Research speedups</mat-label>
-            <input matInput type="number" min="0" formControlName="researchSpeedups" />
-          </mat-form-field>
-        </div>
+    <!-- Tuesday — Research -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Tuesday — Research</mat-card-title>
+        <mat-card-subtitle
+          >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
+          speedups you'll use for Research.</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <app-day-availability-picker
+          formControlName="availableTimesResearch"
+          [minSlots]="minTimeSlots"
+        />
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>How many days will you use for Research?</mat-label>
+          <input matInput type="number" min="0" formControlName="daysResearch" />
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Thursday — Troop Training -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Thursday — Troop Training</mat-card-title>
+        <mat-card-subtitle
+          >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
+          speedups you'll use for Troop Training.</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <app-day-availability-picker
+          formControlName="availableTimesTraining"
+          [minSlots]="minTimeSlots"
+        />
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>How many days will you use for Troop Training?</mat-label>
+          <input matInput type="number" min="0" formControlName="daysTraining" />
+        </mat-form-field>
       </mat-card-content>
     </mat-card>
 
