@@ -71,6 +71,12 @@
               }
             </mat-chip-set>
           </mat-card-content>
+          <mat-card-actions>
+            <button mat-stroked-button [routerLink]="['/admin', form.id, 'submissions']" (click)="$event.stopPropagation()">
+              <mat-icon>list_alt</mat-icon>
+              See submissions
+            </button>
+          </mat-card-actions>
         </mat-card>
       }
     </div>

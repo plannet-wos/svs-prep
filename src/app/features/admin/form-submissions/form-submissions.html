@@ -1,0 +1,79 @@
+<main class="page">
+  <header class="admin-header">
+    <h1><mat-icon>list_alt</mat-icon> Submissions</h1>
+    <button mat-stroked-button routerLink="/admin">Back to forms</button>
+  </header>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-progress-spinner diameter="32" mode="indeterminate" />
+    </div>
+  } @else if (loadError()) {
+    <mat-card>
+      <mat-card-content>Couldn't load submissions.</mat-card-content>
+      <mat-card-actions>
+        <button mat-stroked-button (click)="load()">Retry</button>
+      </mat-card-actions>
+    </mat-card>
+  } @else if (!form()) {
+    <mat-card>
+      <mat-card-content>Couldn't find that form.</mat-card-content>
+    </mat-card>
+  } @else {
+    <p class="subtitle">
+      Battle: {{ form()!.battleDate }} · {{ items().length }}
+      submission{{ items().length === 1 ? '' : 's' }}
+    </p>
+
+    @if (!items().length) {
+      <mat-card>
+        <mat-card-content>No submissions yet.</mat-card-content>
+      </mat-card>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Alliance &amp; name</th>
+              <th>Player ID</th>
+              <th>Furnace level</th>
+              <th>RFC</th>
+              <th>FC</th>
+              <th>Construction days</th>
+              <th>Construction slots</th>
+              <th>Research days</th>
+              <th>Research slots</th>
+              <th>Training days</th>
+              <th>Training slots</th>
+              <th>Participation</th>
+              <th>Ultra card</th>
+              <th>Fair?</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of items(); track s.playerId) {
+              <tr>
+                <td>{{ s.allianceAndName }}</td>
+                <td>{{ s.playerId }}</td>
+                <td>{{ s.furnaceLevel }}</td>
+                <td>{{ s.rfc }}</td>
+                <td>{{ s.fc }}</td>
+                <td>{{ s.daysConstruction }}</td>
+                <td>{{ s.availableTimesConstruction.length }}/48</td>
+                <td>{{ s.daysResearch }}</td>
+                <td>{{ s.availableTimesResearch.length }}/48</td>
+                <td>{{ s.daysTraining }}</td>
+                <td>{{ s.availableTimesTraining.length }}/48</td>
+                <td>{{ s.participation }}</td>
+                <td>{{ s.ultraValueCard }}</td>
+                <td>{{ s.fairProcess }}</td>
+                <td>{{ s.updatedAt | date: 'short' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</main>
