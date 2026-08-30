@@ -40,11 +40,11 @@
               <th>RFC</th>
               <th>FC</th>
               <th>Construction days</th>
-              <th>Construction slots</th>
+              <th>Construction availability (UTC)</th>
               <th>Research days</th>
-              <th>Research slots</th>
+              <th>Research availability (UTC)</th>
               <th>Training days</th>
-              <th>Training slots</th>
+              <th>Training availability (UTC)</th>
               <th>Participation</th>
               <th>Ultra card</th>
               <th>Fair?</th>
@@ -60,11 +60,11 @@
                 <td>{{ s.rfc }}</td>
                 <td>{{ s.fc }}</td>
                 <td>{{ s.daysConstruction }}</td>
-                <td>{{ s.availableTimesConstruction.length }}/48</td>
+                <td class="availability">{{ formatSlotRanges(s.availableTimesConstruction) }}</td>
                 <td>{{ s.daysResearch }}</td>
-                <td>{{ s.availableTimesResearch.length }}/48</td>
+                <td class="availability">{{ formatSlotRanges(s.availableTimesResearch) }}</td>
                 <td>{{ s.daysTraining }}</td>
-                <td>{{ s.availableTimesTraining.length }}/48</td>
+                <td class="availability">{{ formatSlotRanges(s.availableTimesTraining) }}</td>
                 <td>{{ s.participation }}</td>
                 <td>{{ s.ultraValueCard }}</td>
                 <td>{{ s.fairProcess }}</td>
