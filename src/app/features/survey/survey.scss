@@ -20,6 +20,12 @@
     margin-bottom: 8px;
   }
 
+  .page-logo {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
   p {
     opacity: 0.85;
     line-height: 1.5;
