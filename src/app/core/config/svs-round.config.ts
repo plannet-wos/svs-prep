@@ -1,17 +1,10 @@
 /**
- * Per-round configuration for the current SvS Preparation survey.
- *
- * Update this file at the start of every new SvS prep round — it mirrors
- * the hardcoded config block at the top of the old `assign_appointments.py`
- * script (INPUT_FILE, EXCLUDED_IDS, etc. in Documents/SVS). Nothing here is
- * read from Firestore; it's a manual edit + redeploy per round, same as
- * the Python script always was.
+ * Options that hold steady across SvS rounds — unlike battle date, furnace-level wording, and
+ * day-of-week assignments, which are now admin-configurable per round (see
+ * core/models/svs-form.model.ts and the admin pages under features/admin). This file used to
+ * carry those too; it was manually edited + redeployed at the start of every round the same way
+ * the old `assign_appointments.py` script's config block was.
  */
-
-/** Shown in the page header and in the "will you participate" question. */
-export const SVS_BATTLE_DATE_LABEL = 'Saturday 5 September 2026';
-
-export const FURNACE_LEVEL_OPTIONS = ['Lower than FC8', 'FC8 (not maxed)', 'FC8 maxed'] as const;
 
 export const PARTICIPATION_OPTIONS = [
   'Yes, full 5 hours (12-17 UTC)',

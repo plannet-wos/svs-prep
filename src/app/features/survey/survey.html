@@ -1,16 +1,22 @@
 <main class="page">
-  <header class="intro">
-    <h1><mat-icon>military_tech</mat-icon> SvS Preparation Sign-Up</h1>
-    <p>
-      Fill this in once per SvS round so we can build the appointment schedule for
-      <strong>Construction</strong> (Monday), <strong>Research</strong> (Tuesday) and
-      <strong>Troop Training</strong> (Thursday). Each day has its own availability below — the
-      more slots you select, the better your chance of getting a slot on that day. Local times
-      shown are for {{ localTimezone }} — double-check that matches yours.
-    </p>
-  </header>
+  @if (loadingForm()) {
+    <div class="loading">
+      <mat-progress-spinner diameter="32" mode="indeterminate" />
+    </div>
+  } @else if (openForm(); as activeForm) {
+    <header class="intro">
+      <h1><mat-icon>military_tech</mat-icon> SvS Preparation Sign-Up</h1>
+      <p>
+        Fill this in once per SvS round so we can build the appointment schedule for
+        <strong>Construction</strong> ({{ activeForm.constructionDay }}), <strong>Research</strong> ({{
+          activeForm.researchDay
+        }}) and <strong>Troop Training</strong> ({{ activeForm.trainingDay }}). Each day has its own
+        availability below — the more slots you select, the better your chance of getting a slot on that
+        day. Local times shown are for {{ localTimezone }} — double-check that matches yours.
+      </p>
+    </header>
 
-  <form [formGroup]="form" (ngSubmit)="submit()" class="survey">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="survey">
     <!-- Who are you -->
     <mat-card>
       <mat-card-header>
@@ -84,8 +90,8 @@
 
         @if (form.controls.rfc.disabled) {
           <p class="field-hint">
-            You're FC8 maxed, so RFC, FC, and days for Construction below don't apply — grayed
-            out and zeroed.
+            You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so RFC, FC, and days for
+            Construction below don't apply — grayed out and zeroed.
           </p>
         }
         <div class="grid two spaced">
@@ -101,10 +107,10 @@
       </mat-card-content>
     </mat-card>
 
-    <!-- Monday — Construction -->
+    <!-- Construction -->
     <mat-card>
       <mat-card-header>
-        <mat-card-title>Monday — Construction</mat-card-title>
+        <mat-card-title>{{ activeForm.constructionDay }} — Construction</mat-card-title>
         <mat-card-subtitle
           >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
           speedups you'll use for Construction.</mat-card-subtitle
@@ -122,10 +128,10 @@
       </mat-card-content>
     </mat-card>
 
-    <!-- Tuesday — Research -->
+    <!-- Research -->
     <mat-card>
       <mat-card-header>
-        <mat-card-title>Tuesday — Research</mat-card-title>
+        <mat-card-title>{{ activeForm.researchDay }} — Research</mat-card-title>
         <mat-card-subtitle
           >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
           speedups you'll use for Research.</mat-card-subtitle
@@ -143,10 +149,10 @@
       </mat-card-content>
     </mat-card>
 
-    <!-- Thursday — Troop Training -->
+    <!-- Troop Training -->
     <mat-card>
       <mat-card-header>
-        <mat-card-title>Thursday — Troop Training</mat-card-title>
+        <mat-card-title>{{ activeForm.trainingDay }} — Troop Training</mat-card-title>
         <mat-card-subtitle
           >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
           speedups you'll use for Troop Training.</mat-card-subtitle
@@ -238,4 +244,9 @@
       </button>
     </div>
   </form>
+  } @else {
+    <mat-card>
+      <mat-card-content>No SvS prep round is currently accepting submissions. Check back later.</mat-card-content>
+    </mat-card>
+  }
 </main>

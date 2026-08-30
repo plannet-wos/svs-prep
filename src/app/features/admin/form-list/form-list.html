@@ -1,0 +1,63 @@
+<main class="page">
+  <header class="admin-header">
+    <h1><mat-icon>admin_panel_settings</mat-icon> SvS Prep Forms</h1>
+    <div class="actions">
+      <button mat-flat-button color="primary" routerLink="/admin/new">
+        <mat-icon>add</mat-icon>
+        New form
+      </button>
+      <button mat-stroked-button (click)="logout()">Log out</button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-progress-spinner diameter="32" mode="indeterminate" />
+    </div>
+  } @else if (loadError()) {
+    <mat-card>
+      <mat-card-content>Couldn't load the forms list.</mat-card-content>
+      <mat-card-actions>
+        <button mat-stroked-button (click)="load()">Retry</button>
+      </mat-card-actions>
+    </mat-card>
+  } @else if (!items().length) {
+    <mat-card>
+      <mat-card-content>No SvS prep forms have been created yet.</mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="form-cards">
+      @for (form of items(); track form.id) {
+        <mat-card class="form-card" [routerLink]="['/admin', form.id]">
+          <mat-card-header>
+            <mat-card-title>Battle: {{ form.battleDate }}</mat-card-title>
+            <mat-card-subtitle>Highest FC unlocked: FC{{ form.highestFcLevel }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>
+              Construction: {{ form.constructionDay }} · Research: {{ form.researchDay }} · Training:
+              {{ form.trainingDay }}
+            </p>
+            <p>
+              Submissions: {{ form.submissionsOpenAt | date: 'medium' }} –
+              {{ form.submissionsCloseAt | date: 'medium' }}
+            </p>
+            <mat-chip-set>
+              @switch (formStatus(form)) {
+                @case ('draft') {
+                  <mat-chip>Draft</mat-chip>
+                }
+                @case ('open') {
+                  <mat-chip class="status-open">Open</mat-chip>
+                }
+                @case ('closed') {
+                  <mat-chip>Closed</mat-chip>
+                }
+              }
+            </mat-chip-set>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</main>

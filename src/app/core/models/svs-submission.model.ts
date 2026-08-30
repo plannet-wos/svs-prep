@@ -1,7 +1,9 @@
 /**
- * One player's SvS Preparation survey answers.
- * Firestore doc ID = playerId (trimmed). A resubmission overwrites the
- * existing doc for that player — see SvsSubmissionService.save().
+ * One player's SvS Preparation survey answers for one round.
+ * Firestore doc ID = `${formId}_${playerId}` (see SvsSubmissionService) — scoped per round
+ * (see core/models/svs-form.model.ts) so the same player can submit once per round instead of
+ * one submission ever colliding across rounds. A resubmission for the same round overwrites the
+ * existing doc for that player.
  *
  * Field order/semantics mirror the original Google Form (and the column
  * layout `assign_appointments.py` expects — see Documents/SVS/WORKFLOW.md),
@@ -9,6 +11,8 @@
  * of one shared availability blob for all three buffs.
  */
 export interface SvsSubmission {
+  /** Which SvS prep form (round) this submission answers. */
+  formId: string;
   allianceAndName: string;
   playerId: string;
 
@@ -54,6 +58,7 @@ export const SVS_SUBMISSION_FIELD_LABELS: Record<
   Exclude<keyof SvsSubmission, 'createdAt' | 'updatedAt'>,
   string
 > = {
+  formId: 'SvS prep round',
   allianceAndName: 'Alliance and name',
   playerId: 'Player ID',
   availableTimesConstruction: 'Available times — Construction (Monday)',

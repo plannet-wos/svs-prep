@@ -1,0 +1,56 @@
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.form-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-card {
+  cursor: pointer;
+
+  p {
+    margin: 4px 0;
+    opacity: 0.85;
+  }
+
+  mat-chip-set {
+    margin-top: 8px;
+  }
+}
+
+.status-open {
+  --mdc-chip-elevated-container-color: var(--mat-sys-primary);
+  --mdc-chip-label-text-color: var(--mat-sys-on-primary);
+}
