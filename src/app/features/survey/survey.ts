@@ -22,9 +22,16 @@ import { SvsSubmission } from '../../core/models/svs-submission.model';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
 import { DiffDialogComponent } from './diff-dialog/diff-dialog';
 
-function requireAtLeastOneTime(control: { value: string[] }): ValidationErrors | null {
-  return control.value?.length ? null : { required: true };
+/** Players need a realistic spread of options for the assignment algorithm to work with. */
+export const MIN_TIME_SLOTS = 5;
+
+function requireMinTimes(min: number) {
+  return (control: { value: string[] }): ValidationErrors | null =>
+    (control.value?.length ?? 0) >= min ? null : { minTimes: true };
 }
+
+/** rfc/fc/constructionSpeedups don't matter once a player is FC8 maxed — nothing left to build. */
+const FC8_MAXED = 'FC8 maxed';
 
 @Component({
   selector: 'app-survey',
@@ -50,6 +57,7 @@ export class SurveyComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   readonly battleDateLabel = SVS_BATTLE_DATE_LABEL;
+  readonly minTimeSlots = MIN_TIME_SLOTS;
   readonly slotGroups = SLOT_GROUPS;
   readonly furnaceLevelOptions = FURNACE_LEVEL_OPTIONS;
   readonly participationOptions = PARTICIPATION_OPTIONS;
@@ -65,7 +73,7 @@ export class SurveyComponent {
   readonly form = this.fb.group({
     allianceAndName: ['', Validators.required],
     playerId: ['', Validators.required],
-    availableTimes: this.fb.control<string[]>([], requireAtLeastOneTime),
+    availableTimes: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
     otherAvailableTime: [''],
     furnaceLevel: ['', Validators.required],
     rfc: [0, [Validators.required, Validators.min(0)]],
@@ -146,6 +154,20 @@ export class SurveyComponent {
     ).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
+  /** FC8-maxed players have nothing left to build — RFC/FC/construction speedups don't apply. */
+  onFurnaceLevelChange(level: string): void {
+    const maxed = level === FC8_MAXED;
+    const fields = [this.form.controls.rfc, this.form.controls.fc, this.form.controls.constructionSpeedups];
+    for (const field of fields) {
+      if (maxed) {
+        field.setValue(0);
+        field.disable();
+      } else {
+        field.enable();
+      }
+    }
+  }
+
   private localHourLabel(hour: number): string {
     const today = new Date();
     return new Date(
@@ -175,6 +197,7 @@ export class SurveyComponent {
     const existing = this.existingSubmission();
     if (!existing) return;
     this.form.patchValue(existing);
+    this.onFurnaceLevelChange(existing.furnaceLevel);
     this.snackBar.open('Loaded your previous answers — edit and resubmit below.', 'OK', {
       duration: 4000,
     });
@@ -254,6 +277,7 @@ export class SurveyComponent {
         changeSuggestion: '',
         feedback: '',
       });
+      this.onFurnaceLevelChange(''); // form.reset() doesn't undo .disable() — re-enable for the next entry
       this.existingSubmission.set(null);
     } catch (err) {
       console.error(err);

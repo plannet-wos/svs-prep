@@ -61,8 +61,9 @@
         <mat-card-title>Availability</mat-card-title>
         <mat-card-subtitle
           >Tap individual 30-min slots for precise availability, or tap a block's header to
-          select/clear the whole 3 hours at once. Local times are for {{ localTimezone }},
-          double-check they look right.</mat-card-subtitle
+          select/clear the whole 3 hours at once. Select at least {{ minTimeSlots }} slots — the
+          more you select, the better your chance of getting a slot. Local times are for
+          {{ localTimezone }}, double-check they look right.</mat-card-subtitle
         >
       </mat-card-header>
       <mat-card-content>
@@ -116,7 +117,10 @@
         @if (
           form.controls.availableTimes.invalid && form.controls.availableTimes.touched
         ) {
-          <p class="field-error">Select at least one time slot.</p>
+          <p class="field-error">
+            Select at least {{ minTimeSlots }} time slots ({{ timesSelectedCount() }} of
+            {{ minTimeSlots }} selected).
+          </p>
         }
 
         <mat-form-field appearance="outline" class="full">
@@ -137,7 +141,11 @@
       </mat-card-header>
       <mat-card-content>
         <label class="section-label">What is your current Furnace Level?</label>
-        <mat-radio-group formControlName="furnaceLevel" class="radio-col">
+        <mat-radio-group
+          formControlName="furnaceLevel"
+          class="radio-col"
+          (change)="onFurnaceLevelChange($event.value)"
+        >
           @for (opt of furnaceLevelOptions; track opt) {
             <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
           }
@@ -146,6 +154,9 @@
           <p class="field-error">Required</p>
         }
 
+        @if (form.controls.rfc.disabled) {
+          <p class="field-hint">You're FC8 maxed, so RFC / FC / construction speedups don't apply.</p>
+        }
         <div class="grid two spaced">
           <mat-form-field appearance="outline">
             <mat-label>Refined FC (RFC)</mat-label>
