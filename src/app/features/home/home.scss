@@ -1,28 +1,30 @@
 .page {
-  max-width: 900px;
+  max-width: 720px;
   margin: 0 auto;
   padding: 24px 16px 96px;
 }
 
-.admin-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+.intro {
   margin-bottom: 24px;
 
   h1 {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: 0;
+    margin-bottom: 8px;
   }
-}
 
-.actions {
-  display: flex;
-  gap: 8px;
+  .page-logo {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 8px;
+  }
+
+  p {
+    opacity: 0.85;
+    line-height: 1.5;
+  }
 }
 
 .loading {
@@ -38,9 +40,6 @@
 }
 
 .form-card {
-  position: relative;
-  cursor: pointer;
-
   p {
     margin: 4px 0;
     opacity: 0.85;
@@ -48,18 +47,6 @@
 
   mat-chip-set {
     margin-top: 8px;
-  }
-
-  .delete-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 1;
-    color: var(--mat-sys-error);
-
-    mat-progress-spinner {
-      display: inline-block;
-    }
   }
 }
 

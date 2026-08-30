@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, addDoc, collection, doc, getDoc, getDocs, setDoc } from '@angular/fire/firestore';
-import { SvsForm, SvsFormWithId, formStatus } from '../models/svs-form.model';
+import { Firestore, addDoc, collection, deleteDoc, doc, getDoc, getDocs, setDoc } from '@angular/fire/firestore';
+import { SvsForm, SvsFormWithId } from '../models/svs-form.model';
 
 const COLLECTION = 'svs_forms';
 
@@ -24,12 +24,6 @@ export class SvsFormService {
     return snap.exists() ? ({ id: snap.id, ...(snap.data() as SvsForm) }) : null;
   }
 
-  /** The round currently accepting submissions, if any. Latest battle date wins on overlap. */
-  async getOpenForm(): Promise<SvsFormWithId | null> {
-    const open = (await this.getAll()).filter((f) => formStatus(f) === 'open');
-    return open[0] ?? null;
-  }
-
   /** Creates a new form and returns its generated ID. */
   async create(data: Omit<SvsForm, 'createdAt' | 'updatedAt'>): Promise<string> {
     const now = Date.now();
@@ -43,5 +37,10 @@ export class SvsFormService {
 
   async update(id: string, data: Omit<SvsForm, 'createdAt' | 'updatedAt'>): Promise<void> {
     await setDoc(doc(this.firestore, COLLECTION, id), { ...data, updatedAt: Date.now() }, { merge: true });
+  }
+
+  /** Permanently deletes a form. Its past submissions (svs_submissions) are left untouched. */
+  async delete(id: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, COLLECTION, id));
   }
 }
