@@ -10,15 +10,27 @@ Part of the [plannet-wos](https://github.com/plannet-wos) suite.
 
 The SvS prep sign-up survey — previously a Google Form, manually exported to Excel and fed into a
 Python assignment script (see `Documents/SVS/WORKFLOW.md`) — ported to an in-app Angular form that
-writes straight to Firestore. One submission doc per player ID (`svs_submissions/{playerId}`); a
-resubmission shows a diff of what changed and asks for confirmation before overwriting.
+writes straight to Firestore. One submission doc per (round, player ID) pair
+(`svs_submissions/{formId}_{playerId}`); a resubmission for the same round shows a diff of what
+changed and asks for confirmation before overwriting.
 
-**Per-round config:** update `src/app/core/config/svs-round.config.ts` (the battle date label) at
-the start of each new SvS round — this mirrors the config block that used to sit at the top of the
-old `assign_appointments.py` script.
+**Per-round config:** each SvS round is now an **SvS prep form** (`svs_forms/{id}`) — battle date,
+highest FC level unlocked, Construction/Research/Training days, and the submission open/close
+window — created and edited from the admin pages (the small admin icon, top right) instead of
+editing `svs-round.config.ts` and redeploying. That file now only holds the options that don't
+change per round (participation/Ultra Value Card choices). The public survey always shows whichever
+form's submission window currently contains "now"; with none open it shows a "no round open"
+message instead.
 
-**Not yet ported:** the appointment-assignment algorithm and admin/schedule view. Submissions still
-need to be pulled out of Firestore and run through the existing Python script for now.
+**Admin login:** superadmin-only, reusing the shared `accounts` collection / client-side
+password-hash-verifying-write scheme from foundry-planner and alliance-wiki (see
+`core/services/auth.service.ts` and `core/utils/password.util.ts`) — an existing superadmin account
+from either of those apps works here too. As with every other collection in this shared project,
+Firestore rules only check document shape, not who's writing — the admin pages are a client-side
+gate, not real access control (see `firestore.rules` in the plannet-wos repo).
+
+**Not yet ported:** the appointment-assignment algorithm. Submissions still need to be pulled out of
+Firestore and run through the existing Python script for now.
 
 ## Setup
 

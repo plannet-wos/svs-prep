@@ -1,0 +1,126 @@
+<main class="page">
+  <header class="admin-header">
+    <h1>
+      <mat-icon>{{ formId ? 'edit_calendar' : 'add_circle' }}</mat-icon>
+      {{ formId ? 'Edit SvS prep form' : 'New SvS prep form' }}
+    </h1>
+  </header>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-progress-spinner diameter="32" mode="indeterminate" />
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="save()" class="editor">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Battle &amp; Furnace</mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="grid two">
+          <mat-form-field appearance="outline">
+            <mat-label>Battle day</mat-label>
+            <input matInput [matDatepicker]="battlePicker" formControlName="battleDate" />
+            <mat-datepicker-toggle matIconSuffix [for]="battlePicker" />
+            <mat-datepicker #battlePicker />
+            @if (form.controls.battleDate.invalid && form.controls.battleDate.touched) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Highest FC level unlocked</mat-label>
+            <mat-select formControlName="highestFcLevel">
+              @for (level of fcLevelOptions; track level) {
+                <mat-option [value]="level">FC{{ level }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Buff days</mat-card-title>
+          <mat-card-subtitle>Which day of the week each buff's appointments fall on.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content class="grid three">
+          <mat-form-field appearance="outline">
+            <mat-label>Construction day</mat-label>
+            <mat-select formControlName="constructionDay">
+              @for (day of weekdayOptions; track day) {
+                <mat-option [value]="day">{{ day }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Research day</mat-label>
+            <mat-select formControlName="researchDay">
+              @for (day of weekdayOptions; track day) {
+                <mat-option [value]="day">{{ day }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Training day</mat-label>
+            <mat-select formControlName="trainingDay">
+              @for (day of weekdayOptions; track day) {
+                <mat-option [value]="day">{{ day }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Submission window</mat-card-title>
+          <mat-card-subtitle>When players can fill in and submit this form.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content class="grid two">
+          <mat-form-field appearance="outline">
+            <mat-label>Opens — date</mat-label>
+            <input matInput [matDatepicker]="openDatePicker" formControlName="submissionsOpenDate" />
+            <mat-datepicker-toggle matIconSuffix [for]="openDatePicker" />
+            <mat-datepicker #openDatePicker />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Opens — time</mat-label>
+            <input matInput [matTimepicker]="openTimePicker" formControlName="submissionsOpenTime" />
+            <mat-timepicker-toggle matIconSuffix [for]="openTimePicker" />
+            <mat-timepicker #openTimePicker />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Closes — date</mat-label>
+            <input matInput [matDatepicker]="closeDatePicker" formControlName="submissionsCloseDate" />
+            <mat-datepicker-toggle matIconSuffix [for]="closeDatePicker" />
+            <mat-datepicker #closeDatePicker />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Closes — time</mat-label>
+            <input matInput [matTimepicker]="closeTimePicker" formControlName="submissionsCloseTime" />
+            <mat-timepicker-toggle matIconSuffix [for]="closeTimePicker" />
+            <mat-timepicker #closeTimePicker />
+          </mat-form-field>
+
+          @if (windowError === 'closeBeforeOpen') {
+            <p class="field-error full">Submissions must close after they open.</p>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <div class="submit-row">
+        <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+          @if (saving()) {
+            <mat-progress-spinner diameter="20" mode="indeterminate" />
+          } @else {
+            Save
+          }
+        </button>
+      </div>
+    </form>
+  }
+</main>

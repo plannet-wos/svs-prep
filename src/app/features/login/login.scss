@@ -1,0 +1,36 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.login-card {
+  width: 360px;
+  max-width: calc(100vw - 32px);
+}
+
+mat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 16px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.error {
+  color: #f44336;
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+mat-card-actions {
+  padding: 8px 16px 16px;
+}
+
+mat-spinner {
+  display: inline-block;
+}

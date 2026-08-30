@@ -10,13 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import {
-  FURNACE_LEVEL_OPTIONS,
-  PARTICIPATION_OPTIONS,
-  SVS_BATTLE_DATE_LABEL,
-  ULTRA_CARD_OPTIONS,
-} from '../../core/config/svs-round.config';
+import { PARTICIPATION_OPTIONS, ULTRA_CARD_OPTIONS } from '../../core/config/svs-round.config';
+import { SvsFormWithId, furnaceLevelOptions, maxedFurnaceLabel } from '../../core/models/svs-form.model';
 import { SvsSubmission } from '../../core/models/svs-submission.model';
+import { SvsFormService } from '../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
 import { DayAvailabilityPickerComponent } from './day-availability-picker/day-availability-picker';
 import { DiffDialogComponent } from './diff-dialog/diff-dialog';
@@ -29,14 +26,17 @@ function requireMinTimes(min: number) {
     (control.value?.length ?? 0) >= min ? null : { minTimes: true };
 }
 
-/** RFC/FC/construction-days don't matter once a player is FC8 maxed — nothing left to build. */
-const FC8_MAXED = 'FC8 maxed';
-
 /** Must start with a 3-character alliance tag in brackets, e.g. "[HOC] plannet". */
 const ALLIANCE_TAG_PATTERN = /^\[[A-Za-z0-9]{3}\]/;
 
 /** In-game player IDs are exactly 9 digits. */
 const PLAYER_ID_PATTERN = /^[0-9]{9}$/;
+
+/** 'YYYY-MM-DD' -> "Saturday 5 September 2026". */
+function formatBattleDate(isoDate: string): string {
+  const date = new Date(`${isoDate}T00:00:00`);
+  return date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 @Component({
   selector: 'app-survey',
@@ -57,16 +57,19 @@ const PLAYER_ID_PATTERN = /^[0-9]{9}$/;
 })
 export class SurveyComponent {
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly svsForms = inject(SvsFormService);
   private readonly submissions = inject(SvsSubmissionService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
-  readonly battleDateLabel = SVS_BATTLE_DATE_LABEL;
   readonly minTimeSlots = MIN_TIME_SLOTS;
-  readonly furnaceLevelOptions = FURNACE_LEVEL_OPTIONS;
   readonly participationOptions = PARTICIPATION_OPTIONS;
   readonly ultraCardOptions = ULTRA_CARD_OPTIONS;
+  /** Exposed for the template's "You're FC{n} maxed" hint. */
+  readonly maxedFurnaceLabel = maxedFurnaceLabel;
 
+  readonly loadingForm = signal(true);
+  readonly openForm = signal<SvsFormWithId | null>(null);
   readonly submitting = signal(false);
   readonly checkingPlayerId = signal(false);
   readonly existingSubmission = signal<SvsSubmission | null>(null);
@@ -98,9 +101,37 @@ export class SurveyComponent {
     feedback: [''],
   });
 
-  /** FC8-maxed players have nothing left to build — RFC, FC, and construction days don't apply. */
+  constructor() {
+    this.loadOpenForm();
+  }
+
+  private async loadOpenForm(): Promise<void> {
+    try {
+      this.openForm.set(await this.svsForms.getOpenForm());
+    } catch (err) {
+      console.error(err);
+      this.openForm.set(null); // falls back to the "no round open" message rather than hanging
+    } finally {
+      this.loadingForm.set(false);
+    }
+  }
+
+  /** Derived from the loaded form's battle date — e.g. "Saturday 5 September 2026". */
+  get battleDateLabel(): string {
+    const form = this.openForm();
+    return form ? formatBattleDate(form.battleDate) : '';
+  }
+
+  /** ["Lower than FC8", "FC8 (not maxed)", "FC8 maxed"] parametrized by this round's FC level. */
+  get furnaceLevelOptions(): readonly string[] {
+    const form = this.openForm();
+    return form ? furnaceLevelOptions(form.highestFcLevel) : [];
+  }
+
+  /** FC8/FC10/etc-maxed players have nothing left to build — RFC, FC, and construction days don't apply. */
   onFurnaceLevelChange(level: string): void {
-    const maxed = level === FC8_MAXED;
+    const form = this.openForm();
+    const maxed = !!form && level === maxedFurnaceLabel(form.highestFcLevel);
     const fields = [this.form.controls.rfc, this.form.controls.fc, this.form.controls.daysConstruction];
     for (const field of fields) {
       if (maxed) {
@@ -113,14 +144,15 @@ export class SurveyComponent {
   }
 
   async onPlayerIdBlur(): Promise<void> {
+    const form = this.openForm();
     const playerId = this.form.controls.playerId.value.trim();
-    if (!playerId) {
+    if (!playerId || !form) {
       this.existingSubmission.set(null);
       return;
     }
     this.checkingPlayerId.set(true);
     try {
-      const existing = await this.submissions.getByPlayerId(playerId);
+      const existing = await this.submissions.getByFormAndPlayerId(form.id, playerId);
       this.existingSubmission.set(existing);
     } catch {
       // Non-fatal — the submit-time check will still catch it. Silent here
@@ -140,9 +172,10 @@ export class SurveyComponent {
     });
   }
 
-  private currentAnswers(): Omit<SvsSubmission, 'createdAt' | 'updatedAt'> {
+  private currentAnswers(formId: string): Omit<SvsSubmission, 'createdAt' | 'updatedAt'> {
     const v = this.form.getRawValue();
     return {
+      formId,
       allianceAndName: v.allianceAndName.trim(),
       playerId: v.playerId.trim(),
       availableTimesConstruction: v.availableTimesConstruction,
@@ -164,6 +197,9 @@ export class SurveyComponent {
   }
 
   async submit(): Promise<void> {
+    const form = this.openForm();
+    if (!form) return;
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.snackBar.open('Please fill in all required fields.', 'OK', { duration: 4000 });
@@ -172,8 +208,8 @@ export class SurveyComponent {
 
     this.submitting.set(true);
     try {
-      const answers = this.currentAnswers();
-      const existing = await this.submissions.getByPlayerId(answers.playerId);
+      const answers = this.currentAnswers(form.id);
+      const existing = await this.submissions.getByFormAndPlayerId(form.id, answers.playerId);
 
       if (existing) {
         const confirmed = await firstValueFrom(
@@ -187,7 +223,7 @@ export class SurveyComponent {
         }
       }
 
-      await this.submissions.save(answers.playerId, answers, !existing);
+      await this.submissions.save(form.id, answers.playerId, answers, !existing);
       this.snackBar.open('Thanks! Your answers were saved.', 'OK', { duration: 5000 });
       this.form.reset({
         allianceAndName: '',
