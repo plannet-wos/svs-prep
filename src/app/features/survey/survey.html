@@ -1,0 +1,237 @@
+<main class="page">
+  <header class="intro">
+    <h1><mat-icon>military_tech</mat-icon> SvS Preparation Sign-Up</h1>
+    <p>
+      Fill this in once per SvS round so we can build the appointment schedule for
+      <strong>Construction</strong> (Monday), <strong>Research</strong> (Tuesday) and
+      <strong>Troop Training</strong> (Thursday). Times are picked by preference and speedups
+      available — the more time blocks you select, the better your chance of getting a slot.
+    </p>
+  </header>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="survey">
+    <!-- Who are you -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Who are you</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="grid two">
+        <mat-form-field appearance="outline">
+          <mat-label>Alliance and name</mat-label>
+          <input matInput formControlName="allianceAndName" placeholder="[HOC] plannet" />
+          @if (form.controls.allianceAndName.invalid && form.controls.allianceAndName.touched) {
+            <mat-error>Required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Player ID</mat-label>
+          <input
+            matInput
+            formControlName="playerId"
+            placeholder="e.g. 483099180"
+            (blur)="onPlayerIdBlur()"
+          />
+          @if (checkingPlayerId()) {
+            <mat-hint>Checking for a previous submission…</mat-hint>
+          }
+          @if (form.controls.playerId.invalid && form.controls.playerId.touched) {
+            <mat-error>Required</mat-error>
+          }
+        </mat-form-field>
+      </mat-card-content>
+
+      @if (existingSubmission(); as existing) {
+        <mat-card-content class="existing-banner">
+          <mat-icon>info</mat-icon>
+          <span
+            >We found a previous submission from <strong>{{ existing.allianceAndName }}</strong
+            >.</span
+          >
+          <button mat-stroked-button type="button" (click)="loadPreviousAnswers()">
+            Load previous answers
+          </button>
+        </mat-card-content>
+      }
+    </mat-card>
+
+    <!-- Availability -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Availability</mat-card-title>
+        <mat-card-subtitle
+          >Choose every 3-hour UTC block that works for you — select as many as you
+          can.</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <div class="time-blocks">
+          @for (block of timeBlocks; track block) {
+            <mat-checkbox
+              [checked]="isTimeChecked(block)"
+              (change)="toggleTime(block, $event.checked)"
+            >
+              {{ block }}
+            </mat-checkbox>
+          }
+        </div>
+        @if (
+          form.controls.availableTimes.invalid && form.controls.availableTimes.touched
+        ) {
+          <p class="field-error">Select at least one time block.</p>
+        }
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Other time (optional)</mat-label>
+          <input
+            matInput
+            formControlName="otherAvailableTime"
+            placeholder="e.g. 03:30 - 04:30 UTC"
+          />
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Furnace & speedups -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Furnace level &amp; speedups</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <label class="section-label">What is your current Furnace Level?</label>
+        <mat-radio-group formControlName="furnaceLevel" class="radio-col">
+          @for (opt of furnaceLevelOptions; track opt) {
+            <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+          }
+        </mat-radio-group>
+        @if (form.controls.furnaceLevel.invalid && form.controls.furnaceLevel.touched) {
+          <p class="field-error">Required</p>
+        }
+
+        <div class="grid two spaced">
+          <mat-form-field appearance="outline">
+            <mat-label>Refined FC (RFC)</mat-label>
+            <input matInput type="number" min="0" formControlName="rfc" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Normal FC</mat-label>
+            <input matInput type="number" min="0" formControlName="fc" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>How many general speedups do you have? (in days)</mat-label>
+          <input matInput type="number" min="0" formControlName="generalSpeedups" />
+        </mat-form-field>
+
+        <p class="section-label">
+          How many days of your general speedups will you use for each buff?
+        </p>
+        <div class="grid three">
+          <mat-form-field appearance="outline">
+            <mat-label>Construction</mat-label>
+            <input matInput type="number" min="0" formControlName="genDaysConstruction" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Research</mat-label>
+            <input matInput type="number" min="0" formControlName="genDaysResearch" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Troop Training</mat-label>
+            <input matInput type="number" min="0" formControlName="genDaysTraining" />
+          </mat-form-field>
+        </div>
+
+        <p class="section-label">How many specific (buff-type) speedups do you have? (in days)</p>
+        <div class="grid three">
+          <mat-form-field appearance="outline">
+            <mat-label>Construction speedups</mat-label>
+            <input matInput type="number" min="0" formControlName="constructionSpeedups" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Troop training speedups</mat-label>
+            <input matInput type="number" min="0" formControlName="trainingSpeedups" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Research speedups</mat-label>
+            <input matInput type="number" min="0" formControlName="researchSpeedups" />
+          </mat-form-field>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Battle & card -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>SvS battle</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <label class="section-label"
+          >Will you participate in the SvS battle on {{ battleDateLabel }}?</label
+        >
+        <mat-radio-group formControlName="participation" class="radio-col">
+          @for (opt of participationOptions; track opt) {
+            <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+          }
+        </mat-radio-group>
+        @if (form.controls.participation.invalid && form.controls.participation.touched) {
+          <p class="field-error">Required</p>
+        }
+
+        <label class="section-label">Do you have the Ultra Value Monthly Card (auto-heal)?</label>
+        <mat-radio-group formControlName="ultraValueCard" class="radio-col">
+          @for (opt of ultraCardOptions; track opt) {
+            <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+          }
+        </mat-radio-group>
+        @if (form.controls.ultraValueCard.invalid && form.controls.ultraValueCard.touched) {
+          <p class="field-error">Required</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Feedback -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Feedback</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <label class="section-label">Do you find this process for appointments fair to everyone?</label>
+        <mat-radio-group formControlName="fairProcess" class="radio-row">
+          <mat-radio-button value="Yes">Yes</mat-radio-button>
+          <mat-radio-button value="No">No</mat-radio-button>
+        </mat-radio-group>
+        @if (form.controls.fairProcess.invalid && form.controls.fairProcess.touched) {
+          <p class="field-error">Required</p>
+        }
+
+        @if (form.controls.fairProcess.value === 'No') {
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Tell us more</mat-label>
+            <textarea matInput formControlName="fairProcessDetails" rows="2"></textarea>
+          </mat-form-field>
+        }
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>What would you like to see changed for SvS preparation next time?</mat-label>
+          <textarea matInput formControlName="changeSuggestion" rows="2"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Any general feedback you would like to give the SVS Team?</mat-label>
+          <textarea matInput formControlName="feedback" rows="2"></textarea>
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="submit-row">
+      <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <mat-progress-spinner diameter="20" mode="indeterminate" />
+        } @else {
+          Submit
+        }
+      </button>
+    </div>
+  </form>
+</main>

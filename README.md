@@ -1,9 +1,24 @@
 # SvS Preparation
 
-A planning tool for **Whiteout Survival** Survivor vs Survivor (SvS) events. Built with Angular + Firebase Hosting.
+A planning tool for **Whiteout Survival** Survivor vs Survivor (SvS) events. Built with Angular +
+Angular Material + Firebase Hosting/Firestore.
 
 Live: **https://svs-prep.web.app**
 Part of the [plannet-wos](https://github.com/plannet-wos) suite.
+
+## What's here
+
+The SvS prep sign-up survey — previously a Google Form, manually exported to Excel and fed into a
+Python assignment script (see `Documents/SVS/WORKFLOW.md`) — ported to an in-app Angular form that
+writes straight to Firestore. One submission doc per player ID (`svs_submissions/{playerId}`); a
+resubmission shows a diff of what changed and asks for confirmation before overwriting.
+
+**Per-round config:** update `src/app/core/config/svs-round.config.ts` (the battle date label) at
+the start of each new SvS round — this mirrors the config block that used to sit at the top of the
+old `assign_appointments.py` script.
+
+**Not yet ported:** the appointment-assignment algorithm and admin/schedule view. Submissions still
+need to be pulled out of Firestore and run through the existing Python script for now.
 
 ## Setup
 
@@ -16,7 +31,15 @@ Then open `http://localhost:4200/`. To run multiple apps side-by-side, override 
 
 ## Firebase config
 
-This app uses Firebase only for hosting — no Firestore, no Auth. There's no checked-in API key.
+This app uses Firebase Hosting and Firestore (`tal-coordinator` project, shared with the other
+plannet-wos apps). The Firebase web API key in `src/environments/environment.ts` is intentionally
+checked in — [Firebase web API keys are designed to be public](https://firebase.google.com/docs/projects/api-keys);
+security is enforced by `firestore.rules`, not the key.
+
+`firestore.rules` in this repo is a full copy of the project-wide ruleset (shared with
+foundry-planner, alliance-wiki, and battle-calculator's `saves` collection) — Firestore rules are
+project-wide, not per-app, so deploying from any one repo replaces all of them. Keep this file in
+sync with the other apps' copies before running `firebase deploy --only firestore:rules`.
 
 ## Contributing
 

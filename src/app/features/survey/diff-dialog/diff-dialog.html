@@ -1,0 +1,32 @@
+<h2 mat-dialog-title>You've already submitted for this player ID</h2>
+
+<mat-dialog-content>
+  @if (changes.length) {
+    <p>Here's what would change if you overwrite your previous answer:</p>
+    <table class="diff-table">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Before</th>
+          <th>After</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of changes; track row.label) {
+          <tr>
+            <td class="field">{{ row.label }}</td>
+            <td class="before">{{ row.before }}</td>
+            <td class="after">{{ row.after }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <p>Nothing changed from your previous answer.</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="confirm()">Overwrite my previous answer</button>
+</mat-dialog-actions>
