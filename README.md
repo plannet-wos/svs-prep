@@ -36,10 +36,10 @@ plannet-wos apps). The Firebase web API key in `src/environments/environment.ts`
 checked in — [Firebase web API keys are designed to be public](https://firebase.google.com/docs/projects/api-keys);
 security is enforced by `firestore.rules`, not the key.
 
-`firestore.rules` in this repo is a full copy of the project-wide ruleset (shared with
-foundry-planner, alliance-wiki, and battle-calculator's `saves` collection) — Firestore rules are
-project-wide, not per-app, so deploying from any one repo replaces all of them. Keep this file in
-sync with the other apps' copies before running `firebase deploy --only firestore:rules`.
+Firestore rules for the shared `tal-coordinator` project (foundry-planner, alliance-wiki, this
+app's `svs_submissions`, and battle-calculator's `saves`) live in the **plannet-wos** repo, not
+here — that's the sole owner/deployer, see its README. This repo has no `firestore.rules` and no
+`"firestore"` key in `firebase.json`, so `firebase deploy` here only ever touches hosting.
 
 ## Contributing
 
