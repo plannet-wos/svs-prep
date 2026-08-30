@@ -3,7 +3,6 @@ import { FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,16 +14,29 @@ import {
   FURNACE_LEVEL_OPTIONS,
   PARTICIPATION_OPTIONS,
   SVS_BATTLE_DATE_LABEL,
-  TIME_BLOCKS,
   ULTRA_CARD_OPTIONS,
 } from '../../core/config/svs-round.config';
 import { SvsSubmission } from '../../core/models/svs-submission.model';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
+import { DayAvailabilityPickerComponent } from './day-availability-picker/day-availability-picker';
 import { DiffDialogComponent } from './diff-dialog/diff-dialog';
 
-function requireAtLeastOneTime(control: { value: string[] }): ValidationErrors | null {
-  return control.value?.length ? null : { required: true };
+/** Players need a realistic spread of options for the assignment algorithm to work with, per day. */
+export const MIN_TIME_SLOTS = 5;
+
+function requireMinTimes(min: number) {
+  return (control: { value: string[] }): ValidationErrors | null =>
+    (control.value?.length ?? 0) >= min ? null : { minTimes: true };
 }
+
+/** RFC/FC/construction-days don't matter once a player is FC8 maxed — nothing left to build. */
+const FC8_MAXED = 'FC8 maxed';
+
+/** Must start with a 3-character alliance tag in brackets, e.g. "[HOC] plannet". */
+const ALLIANCE_TAG_PATTERN = /^\[[A-Za-z0-9]{3}\]/;
+
+/** In-game player IDs are exactly 9 digits. */
+const PLAYER_ID_PATTERN = /^[0-9]{9}$/;
 
 @Component({
   selector: 'app-survey',
@@ -34,11 +46,11 @@ function requireAtLeastOneTime(control: { value: string[] }): ValidationErrors |
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
-    MatCheckboxModule,
     MatRadioModule,
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    DayAvailabilityPickerComponent,
   ],
   templateUrl: './survey.html',
   styleUrl: './survey.scss',
@@ -50,7 +62,7 @@ export class SurveyComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   readonly battleDateLabel = SVS_BATTLE_DATE_LABEL;
-  readonly timeBlocks = TIME_BLOCKS;
+  readonly minTimeSlots = MIN_TIME_SLOTS;
   readonly furnaceLevelOptions = FURNACE_LEVEL_OPTIONS;
   readonly participationOptions = PARTICIPATION_OPTIONS;
   readonly ultraCardOptions = ULTRA_CARD_OPTIONS;
@@ -59,21 +71,25 @@ export class SurveyComponent {
   readonly checkingPlayerId = signal(false);
   readonly existingSubmission = signal<SvsSubmission | null>(null);
 
+  /** Shown once in the page intro — each day's picker shows times in this same browser timezone. */
+  readonly localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   readonly form = this.fb.group({
-    allianceAndName: ['', Validators.required],
-    playerId: ['', Validators.required],
-    availableTimes: this.fb.control<string[]>([], requireAtLeastOneTime),
-    otherAvailableTime: [''],
+    allianceAndName: ['', [Validators.required, Validators.pattern(ALLIANCE_TAG_PATTERN)]],
+    playerId: ['', [Validators.required, Validators.pattern(PLAYER_ID_PATTERN)]],
+
+    availableTimesConstruction: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
+    availableTimesResearch: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
+    availableTimesTraining: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
+
+    daysConstruction: [0, [Validators.required, Validators.min(0)]],
+    daysResearch: [0, [Validators.required, Validators.min(0)]],
+    daysTraining: [0, [Validators.required, Validators.min(0)]],
+
     furnaceLevel: ['', Validators.required],
     rfc: [0, [Validators.required, Validators.min(0)]],
     fc: [0, [Validators.required, Validators.min(0)]],
-    generalSpeedups: [0, [Validators.required, Validators.min(0)]],
-    genDaysConstruction: [0, [Validators.required, Validators.min(0)]],
-    genDaysResearch: [0, [Validators.required, Validators.min(0)]],
-    genDaysTraining: [0, [Validators.required, Validators.min(0)]],
-    constructionSpeedups: [0, [Validators.required, Validators.min(0)]],
-    trainingSpeedups: [0, [Validators.required, Validators.min(0)]],
-    researchSpeedups: [0, [Validators.required, Validators.min(0)]],
+
     participation: ['', Validators.required],
     ultraValueCard: ['', Validators.required],
     fairProcess: ['' as '' | 'Yes' | 'No', Validators.required],
@@ -82,15 +98,18 @@ export class SurveyComponent {
     feedback: [''],
   });
 
-  toggleTime(block: string, checked: boolean): void {
-    const control = this.form.controls.availableTimes;
-    const current = control.value;
-    control.setValue(checked ? [...current, block] : current.filter((b) => b !== block));
-    control.markAsTouched();
-  }
-
-  isTimeChecked(block: string): boolean {
-    return this.form.controls.availableTimes.value.includes(block);
+  /** FC8-maxed players have nothing left to build — RFC, FC, and construction days don't apply. */
+  onFurnaceLevelChange(level: string): void {
+    const maxed = level === FC8_MAXED;
+    const fields = [this.form.controls.rfc, this.form.controls.fc, this.form.controls.daysConstruction];
+    for (const field of fields) {
+      if (maxed) {
+        field.setValue(0);
+        field.disable();
+      } else {
+        field.enable();
+      }
+    }
   }
 
   async onPlayerIdBlur(): Promise<void> {
@@ -115,6 +134,7 @@ export class SurveyComponent {
     const existing = this.existingSubmission();
     if (!existing) return;
     this.form.patchValue(existing);
+    this.onFurnaceLevelChange(existing.furnaceLevel);
     this.snackBar.open('Loaded your previous answers — edit and resubmit below.', 'OK', {
       duration: 4000,
     });
@@ -125,18 +145,15 @@ export class SurveyComponent {
     return {
       allianceAndName: v.allianceAndName.trim(),
       playerId: v.playerId.trim(),
-      availableTimes: v.availableTimes,
-      otherAvailableTime: v.otherAvailableTime.trim(),
+      availableTimesConstruction: v.availableTimesConstruction,
+      availableTimesResearch: v.availableTimesResearch,
+      availableTimesTraining: v.availableTimesTraining,
+      daysConstruction: v.daysConstruction,
+      daysResearch: v.daysResearch,
+      daysTraining: v.daysTraining,
       furnaceLevel: v.furnaceLevel,
       rfc: v.rfc,
       fc: v.fc,
-      generalSpeedups: v.generalSpeedups,
-      genDaysConstruction: v.genDaysConstruction,
-      genDaysResearch: v.genDaysResearch,
-      genDaysTraining: v.genDaysTraining,
-      constructionSpeedups: v.constructionSpeedups,
-      trainingSpeedups: v.trainingSpeedups,
-      researchSpeedups: v.researchSpeedups,
       participation: v.participation,
       ultraValueCard: v.ultraValueCard,
       fairProcess: v.fairProcess,
@@ -175,18 +192,15 @@ export class SurveyComponent {
       this.form.reset({
         allianceAndName: '',
         playerId: '',
-        availableTimes: [],
-        otherAvailableTime: '',
+        availableTimesConstruction: [],
+        availableTimesResearch: [],
+        availableTimesTraining: [],
+        daysConstruction: 0,
+        daysResearch: 0,
+        daysTraining: 0,
         furnaceLevel: '',
         rfc: 0,
         fc: 0,
-        generalSpeedups: 0,
-        genDaysConstruction: 0,
-        genDaysResearch: 0,
-        genDaysTraining: 0,
-        constructionSpeedups: 0,
-        trainingSpeedups: 0,
-        researchSpeedups: 0,
         participation: '',
         ultraValueCard: '',
         fairProcess: '',
@@ -194,6 +208,7 @@ export class SurveyComponent {
         changeSuggestion: '',
         feedback: '',
       });
+      this.onFurnaceLevelChange(''); // form.reset() doesn't undo .disable() — re-enable for the next entry
       this.existingSubmission.set(null);
     } catch (err) {
       console.error(err);

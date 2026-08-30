@@ -46,7 +46,9 @@ mat-card-content.grid,
 
 @media (max-width: 560px) {
   .grid.two,
-  .grid.three {
+  .grid.three,
+  mat-card-content.grid.two,
+  mat-card-content.grid.three {
     grid-template-columns: 1fr;
   }
 }
@@ -61,18 +63,6 @@ mat-card-content.grid,
   font-size: 0.85rem;
   opacity: 0.75;
   margin: 12px 0 6px;
-}
-
-.time-blocks {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 16px;
-}
-
-@media (max-width: 480px) {
-  .time-blocks {
-    grid-template-columns: 1fr;
-  }
 }
 
 .radio-col {
@@ -90,6 +80,12 @@ mat-card-content.grid,
   color: var(--mat-sys-error);
   font-size: 0.75rem;
   margin: 2px 0 0;
+}
+
+.field-hint {
+  opacity: 0.65;
+  font-size: 0.75rem;
+  margin: 8px 0 0;
 }
 
 .existing-banner {
