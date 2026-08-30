@@ -81,13 +81,13 @@ export function isSaturday(date: Date | null): boolean {
 }
 
 /**
- * The prep week (buff days included) is always the calendar week — Monday through Sunday —
- * immediately before the battle's own week. A Saturday battle date is always 12 days after that
- * week's Monday (5 days to reach its own week's Saturday, plus 7 for the week before it).
+ * The prep week's buff days run Monday through Friday of the same week as the battle, leading
+ * right up to it — not a separate earlier week. A Saturday battle date is always 5 days after
+ * that week's Monday.
  */
 export function prepWeekMonday(battleDate: string): Date {
   const monday = new Date(`${battleDate}T00:00:00`);
-  monday.setDate(monday.getDate() - 12);
+  monday.setDate(monday.getDate() - 5);
   return monday;
 }
 

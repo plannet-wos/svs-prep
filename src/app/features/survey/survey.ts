@@ -149,7 +149,7 @@ export class SurveyComponent {
     return form ? furnaceLevelOptions(form.highestFcLevel) : [];
   }
 
-  /** "31. August – 4. September" — the Monday-Friday prep week, always the week before the battle. */
+  /** "7. September – 11. September" — the Monday-Friday prep week leading up to the battle. */
   get prepWeekLabel(): string {
     const form = this.openForm();
     if (!form) return '';
