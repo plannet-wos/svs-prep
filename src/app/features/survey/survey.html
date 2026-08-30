@@ -6,6 +6,7 @@
   } @else if (openForm(); as activeForm) {
     <header class="intro">
       <h1><img src="logo.png" alt="" class="page-logo" /> SvS Preparation Sign-Up</h1>
+      <p class="prep-week">Prep week: <strong>{{ prepWeekLabel }}</strong> — the week before the SvS battle.</p>
       <p>
         Fill this in once per SvS round so we can build the appointment schedule for
         <strong>Construction</strong> ({{ activeForm.constructionDay }}), <strong>Research</strong> ({{
@@ -110,7 +111,7 @@
     <!-- Construction -->
     <mat-card>
       <mat-card-header>
-        <mat-card-title>{{ activeForm.constructionDay }} — Construction</mat-card-title>
+        <mat-card-title>{{ buffDayLabel(activeForm.constructionDay) }} — Construction</mat-card-title>
         <mat-card-subtitle
           >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
           speedups you'll use for Construction.</mat-card-subtitle
@@ -131,7 +132,7 @@
     <!-- Research -->
     <mat-card>
       <mat-card-header>
-        <mat-card-title>{{ activeForm.researchDay }} — Research</mat-card-title>
+        <mat-card-title>{{ buffDayLabel(activeForm.researchDay) }} — Research</mat-card-title>
         <mat-card-subtitle
           >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
           speedups you'll use for Research.</mat-card-subtitle
@@ -152,7 +153,7 @@
     <!-- Troop Training -->
     <mat-card>
       <mat-card-header>
-        <mat-card-title>{{ activeForm.trainingDay }} — Troop Training</mat-card-title>
+        <mat-card-title>{{ buffDayLabel(activeForm.trainingDay) }} — Troop Training</mat-card-title>
         <mat-card-subtitle
           >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
           speedups you'll use for Troop Training.</mat-card-subtitle
@@ -173,7 +174,7 @@
     <!-- Battle & card -->
     <mat-card>
       <mat-card-header>
-        <mat-card-title>SvS battle</mat-card-title>
+        <mat-card-title>SvS battle {{ battleShortDateLabel }}</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <label class="section-label"

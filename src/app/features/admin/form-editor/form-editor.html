@@ -19,11 +19,19 @@
         <mat-card-content class="grid two">
           <mat-form-field appearance="outline">
             <mat-label>Battle day</mat-label>
-            <input matInput [matDatepicker]="battlePicker" formControlName="battleDate" />
+            <input
+              matInput
+              [matDatepicker]="battlePicker"
+              [matDatepickerFilter]="battleDateFilter"
+              formControlName="battleDate"
+            />
+            <mat-hint>Always a Saturday</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="battlePicker" />
             <mat-datepicker #battlePicker />
-            @if (form.controls.battleDate.invalid && form.controls.battleDate.touched) {
+            @if (form.controls.battleDate.hasError('required') && form.controls.battleDate.touched) {
               <mat-error>Required</mat-error>
+            } @else if (form.controls.battleDate.hasError('notSaturday') && form.controls.battleDate.touched) {
+              <mat-error>Must be a Saturday</mat-error>
             }
           </mat-form-field>
 

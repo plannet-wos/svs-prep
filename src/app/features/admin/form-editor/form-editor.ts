@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -11,7 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTimepickerModule } from '@angular/material/timepicker';
-import { FC_LEVEL_OPTIONS, SvsForm, WEEKDAY_OPTIONS } from '../../../core/models/svs-form.model';
+import { FC_LEVEL_OPTIONS, SvsForm, WEEKDAY_OPTIONS, isSaturday } from '../../../core/models/svs-form.model';
 import { SvsFormService } from '../../../core/services/svs-form.service';
 
 /** 'YYYY-MM-DD' <-> Date, for the battleDate field which is stored as a plain date string. */
@@ -20,6 +20,11 @@ function toDateString(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+/** Catches a manually-typed non-Saturday date — the calendar filter alone only stops picker clicks. */
+function requireSaturday(control: AbstractControl<Date | null>): ValidationErrors | null {
+  return !control.value || isSaturday(control.value) ? null : { notSaturday: true };
 }
 
 /** Combines a date-only Date and a time-only Date into one epoch-ms instant. */
@@ -57,6 +62,8 @@ export class SvsFormEditorComponent {
 
   readonly fcLevelOptions = FC_LEVEL_OPTIONS;
   readonly weekdayOptions = WEEKDAY_OPTIONS;
+  /** Battle day is always a Saturday — prep-week dates elsewhere in the app depend on this. */
+  readonly battleDateFilter = isSaturday;
 
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -64,7 +71,7 @@ export class SvsFormEditorComponent {
   protected formId: string | null = null;
 
   readonly form = this.fb.group({
-    battleDate: this.fb.control<Date | null>(null, Validators.required),
+    battleDate: this.fb.control<Date | null>(null, [Validators.required, requireSaturday]),
     highestFcLevel: this.fb.control<(typeof FC_LEVEL_OPTIONS)[number]>(8, Validators.required),
     constructionDay: this.fb.control<(typeof WEEKDAY_OPTIONS)[number]>('Monday', Validators.required),
     researchDay: this.fb.control<(typeof WEEKDAY_OPTIONS)[number]>('Tuesday', Validators.required),
