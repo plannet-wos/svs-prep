@@ -10,11 +10,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { ALL_SLOTS, SLOT_GROUPS, SlotGroup } from '../../core/config/slot-grid';
 import {
   FURNACE_LEVEL_OPTIONS,
   PARTICIPATION_OPTIONS,
   SVS_BATTLE_DATE_LABEL,
-  TIME_BLOCKS,
   ULTRA_CARD_OPTIONS,
 } from '../../core/config/svs-round.config';
 import { SvsSubmission } from '../../core/models/svs-submission.model';
@@ -37,6 +38,7 @@ function requireAtLeastOneTime(control: { value: string[] }): ValidationErrors |
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
   ],
   templateUrl: './survey.html',
   styleUrl: './survey.scss',
@@ -48,7 +50,7 @@ export class SurveyComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   readonly battleDateLabel = SVS_BATTLE_DATE_LABEL;
-  readonly timeBlocks = TIME_BLOCKS;
+  readonly slotGroups = SLOT_GROUPS;
   readonly furnaceLevelOptions = FURNACE_LEVEL_OPTIONS;
   readonly participationOptions = PARTICIPATION_OPTIONS;
   readonly ultraCardOptions = ULTRA_CARD_OPTIONS;
@@ -83,21 +85,38 @@ export class SurveyComponent {
     feedback: [''],
   });
 
-  toggleTime(block: string, checked: boolean): void {
+  private setSlots(slots: readonly string[], selected: boolean): void {
     const control = this.form.controls.availableTimes;
-    const current = control.value;
-    control.setValue(checked ? [...current, block] : current.filter((b) => b !== block));
+    const current = new Set(control.value);
+    for (const slot of slots) {
+      if (selected) current.add(slot);
+      else current.delete(slot);
+    }
+    control.setValue(Array.from(current));
     control.markAsTouched();
   }
 
-  isTimeChecked(block: string): boolean {
-    return this.form.controls.availableTimes.value.includes(block);
+  toggleSlot(slot: string, checked: boolean): void {
+    this.setSlots([slot], checked);
+  }
+
+  isSlotChecked(slot: string): boolean {
+    return this.form.controls.availableTimes.value.includes(slot);
+  }
+
+  /** Whole-group toggle: fills every slot in the group, unless it's already full — then it clears the group. */
+  toggleGroup(group: SlotGroup): void {
+    this.setSlots(group.slots, this.groupState(group) !== 'all');
+  }
+
+  groupState(group: SlotGroup): 'all' | 'some' | 'none' {
+    const selected = group.slots.filter((s) => this.isSlotChecked(s)).length;
+    if (selected === 0) return 'none';
+    return selected === group.slots.length ? 'all' : 'some';
   }
 
   selectAllTimes(): void {
-    const control = this.form.controls.availableTimes;
-    control.setValue([...this.timeBlocks]);
-    control.markAsTouched();
+    this.setSlots(ALL_SLOTS, true);
   }
 
   clearAllTimes(): void {
@@ -111,16 +130,27 @@ export class SurveyComponent {
   }
 
   /** e.g. "09 - 12 UTC" -> "2:00 – 5:00 AM" in the browser's local timezone. */
-  localRangeLabel(block: string): string {
-    const match = block.match(/^(\d{2}) - (\d{2})/);
+  localGroupRangeLabel(group: SlotGroup): string {
+    const match = group.label.match(/^(\d{2}) - (\d{2})/);
     if (!match) return '';
     const [, startStr, endStr] = match;
+    return `${this.localHourLabel(Number(startStr))} – ${this.localHourLabel(Number(endStr))}`;
+  }
+
+  /** e.g. "09:00" -> "11:00 AM" in the browser's local timezone (for the per-slot tooltip). */
+  localSlotLabel(slot: string): string {
+    const [h, m] = slot.split(':').map(Number);
     const today = new Date();
-    const fmt = (hour: number) =>
-      new Date(
-        Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), hour),
-      ).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    return `${fmt(Number(startStr))} – ${fmt(Number(endStr))}`;
+    return new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), h, m),
+    ).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  private localHourLabel(hour: number): string {
+    const today = new Date();
+    return new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), hour),
+    ).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
   async onPlayerIdBlur(): Promise<void> {

@@ -11,18 +11,6 @@
 /** Shown in the page header and in the "will you participate" question. */
 export const SVS_BATTLE_DATE_LABEL = 'Saturday 5 September 2026';
 
-/** The 8 fixed 3-hour UTC appointment blocks offered by the original form. */
-export const TIME_BLOCKS = [
-  '00 - 03 UTC',
-  '03 - 06 UTC',
-  '06 - 09 UTC',
-  '09 - 12 UTC',
-  '12 - 15 UTC',
-  '15 - 18 UTC',
-  '18 - 21 UTC',
-  '21 - 24 UTC',
-] as const;
-
 export const FURNACE_LEVEL_OPTIONS = ['Lower than FC8', 'FC8 (not maxed)', 'FC8 maxed'] as const;
 
 export const PARTICIPATION_OPTIONS = [

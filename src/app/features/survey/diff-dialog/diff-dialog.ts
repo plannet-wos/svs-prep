@@ -43,7 +43,13 @@ export class DiffDialogComponent {
   }
 
   private format(value: unknown): string {
-    if (Array.isArray(value)) return value.length ? value.join(', ') : '—';
+    if (Array.isArray(value)) {
+      if (!value.length) return '—';
+      // availableTimes can hold up to 48 individual slots now — a full join
+      // would be unreadable, so summarize past a handful.
+      if (value.length <= 6) return value.join(', ');
+      return `${value.length} slots (${value.slice(0, 3).join(', ')}, …)`;
+    }
     if (value === '' || value === null || value === undefined) return '—';
     return String(value);
   }

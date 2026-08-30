@@ -10,9 +10,14 @@ export interface SvsSubmission {
   allianceAndName: string;
   playerId: string;
 
-  /** Selected 3-hour UTC blocks, e.g. "09 - 12 UTC". */
+  /**
+   * Selected individual 30-min UTC slots, e.g. "09:00" (see core/config/slot-grid.ts
+   * for the fixed 48-slot grid). This is already the exact "preferred slots" format
+   * assign_appointments.py's assignment algorithm expects — no block-to-slot
+   * expansion needed when that logic gets ported into the app.
+   */
   availableTimes: string[];
-  /** Free-text time range for anything outside the fixed blocks (the form's "Other"). */
+  /** Free-text time for anything that doesn't land on a 30-min boundary (rare — the form's "Other"). */
   otherAvailableTime: string;
 
   furnaceLevel: string;
