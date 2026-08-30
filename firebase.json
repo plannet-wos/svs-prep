@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "site": "svs-prep",
+    "public": "dist/svs-prep/browser",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

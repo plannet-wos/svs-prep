@@ -1,0 +1,15 @@
+.home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.intro {
+  max-width: 480px;
+}
+
+.coming-soon {
+  opacity: 0.75;
+}
