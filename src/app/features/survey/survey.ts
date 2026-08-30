@@ -33,6 +33,12 @@ function requireMinTimes(min: number) {
 /** rfc/fc/constructionSpeedups don't matter once a player is FC8 maxed — nothing left to build. */
 const FC8_MAXED = 'FC8 maxed';
 
+/** Must start with a 3-character alliance tag in brackets, e.g. "[HOC] plannet". */
+const ALLIANCE_TAG_PATTERN = /^\[[A-Za-z0-9]{3}\]/;
+
+/** In-game player IDs are exactly 9 digits. */
+const PLAYER_ID_PATTERN = /^[0-9]{9}$/;
+
 @Component({
   selector: 'app-survey',
   standalone: true,
@@ -71,8 +77,8 @@ export class SurveyComponent {
   readonly localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   readonly form = this.fb.group({
-    allianceAndName: ['', Validators.required],
-    playerId: ['', Validators.required],
+    allianceAndName: ['', [Validators.required, Validators.pattern(ALLIANCE_TAG_PATTERN)]],
+    playerId: ['', [Validators.required, Validators.pattern(PLAYER_ID_PATTERN)]],
     availableTimes: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
     otherAvailableTime: [''],
     furnaceLevel: ['', Validators.required],

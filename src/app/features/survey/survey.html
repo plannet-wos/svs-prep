@@ -19,8 +19,10 @@
         <mat-form-field appearance="outline">
           <mat-label>Alliance and name</mat-label>
           <input matInput formControlName="allianceAndName" placeholder="[HOC] plannet" />
-          @if (form.controls.allianceAndName.invalid && form.controls.allianceAndName.touched) {
+          @if (form.controls.allianceAndName.hasError('required') && form.controls.allianceAndName.touched) {
             <mat-error>Required</mat-error>
+          } @else if (form.controls.allianceAndName.hasError('pattern') && form.controls.allianceAndName.touched) {
+            <mat-error>Must start with your alliance tag in brackets, e.g. [HOC]</mat-error>
           }
         </mat-form-field>
 
@@ -30,13 +32,17 @@
             matInput
             formControlName="playerId"
             placeholder="e.g. 483099180"
+            inputmode="numeric"
+            maxlength="9"
             (blur)="onPlayerIdBlur()"
           />
           @if (checkingPlayerId()) {
             <mat-hint>Checking for a previous submission…</mat-hint>
           }
-          @if (form.controls.playerId.invalid && form.controls.playerId.touched) {
+          @if (form.controls.playerId.hasError('required') && form.controls.playerId.touched) {
             <mat-error>Required</mat-error>
+          } @else if (form.controls.playerId.hasError('pattern') && form.controls.playerId.touched) {
+            <mat-error>Must be exactly 9 digits</mat-error>
           }
         </mat-form-field>
       </mat-card-content>
