@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, doc, getDoc, setDoc } from '@angular/fire/firestore';
+import { Firestore, collection, doc, getDoc, getDocs, query, setDoc, where } from '@angular/fire/firestore';
 import { SvsSubmission } from '../models/svs-submission.model';
 
 const COLLECTION = 'svs_submissions';
@@ -18,6 +18,12 @@ export class SvsSubmissionService {
     const ref = doc(this.firestore, COLLECTION, docId(formId, playerId));
     const snap = await getDoc(ref);
     return snap.exists() ? (snap.data() as SvsSubmission) : null;
+  }
+
+  /** Every submission for a round, for the admin submissions table. No particular order. */
+  async getAllForForm(formId: string): Promise<SvsSubmission[]> {
+    const snap = await getDocs(query(collection(this.firestore, COLLECTION), where('formId', '==', formId)));
+    return snap.docs.map((d) => d.data() as SvsSubmission);
   }
 
   /** Create or overwrite this player's submission for this round. */

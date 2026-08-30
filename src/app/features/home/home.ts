@@ -7,7 +7,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SvsFormWithId, formStatus } from '../../core/models/svs-form.model';
 import { SvsFormService } from '../../core/services/svs-form.service';
-import { AdminLinkComponent } from '../../shared/admin-link/admin-link';
 
 /** 'YYYY-MM-DD' -> "Saturday 5 September 2026". */
 function formatBattleDate(isoDate: string): string {
@@ -31,7 +30,6 @@ function formatBattleDate(isoDate: string): string {
     MatCardModule,
     MatChipsModule,
     MatProgressSpinnerModule,
-    AdminLinkComponent,
   ],
   templateUrl: './home.html',
   styleUrl: './home.scss',
