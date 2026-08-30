@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -11,7 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PARTICIPATION_OPTIONS, ULTRA_CARD_OPTIONS } from '../../core/config/svs-round.config';
-import { SvsFormWithId, furnaceLevelOptions, maxedFurnaceLabel } from '../../core/models/svs-form.model';
+import { SvsFormWithId, formStatus, furnaceLevelOptions, maxedFurnaceLabel } from '../../core/models/svs-form.model';
 import { SvsSubmission } from '../../core/models/svs-submission.model';
 import { SvsFormService } from '../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
@@ -43,6 +44,7 @@ function formatBattleDate(isoDate: string): string {
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    RouterLink,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -57,6 +59,7 @@ function formatBattleDate(isoDate: string): string {
 })
 export class SurveyComponent {
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly route = inject(ActivatedRoute);
   private readonly svsForms = inject(SvsFormService);
   private readonly submissions = inject(SvsSubmissionService);
   private readonly dialog = inject(MatDialog);
@@ -69,6 +72,7 @@ export class SurveyComponent {
   readonly maxedFurnaceLabel = maxedFurnaceLabel;
 
   readonly loadingForm = signal(true);
+  /** The form this route's :id points to — null if not found, or no longer open (see loadForm). */
   readonly openForm = signal<SvsFormWithId | null>(null);
   readonly submitting = signal(false);
   readonly checkingPlayerId = signal(false);
@@ -102,15 +106,23 @@ export class SurveyComponent {
   });
 
   constructor() {
-    this.loadOpenForm();
+    this.loadForm();
   }
 
-  private async loadOpenForm(): Promise<void> {
+  /**
+   * Loads the round the :id route param points to (picked on the home screen — see
+   * features/home/home.ts). Only ever exposes it via `openForm` if it's actually still open:
+   * someone could bookmark/share a survey link after its window closes, and this must keep
+   * refusing submissions the same way the old "no round open" fallback did.
+   */
+  private async loadForm(): Promise<void> {
+    const id = this.route.snapshot.paramMap.get('id');
     try {
-      this.openForm.set(await this.svsForms.getOpenForm());
+      const form = id ? await this.svsForms.getById(id) : null;
+      this.openForm.set(form && formStatus(form) === 'open' ? form : null);
     } catch (err) {
       console.error(err);
-      this.openForm.set(null); // falls back to the "no round open" message rather than hanging
+      this.openForm.set(null); // falls back to the "not available" message rather than hanging
     } finally {
       this.loadingForm.set(false);
     }

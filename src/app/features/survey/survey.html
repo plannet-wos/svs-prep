@@ -246,7 +246,13 @@
   </form>
   } @else {
     <mat-card>
-      <mat-card-content>No SvS prep round is currently accepting submissions. Check back later.</mat-card-content>
+      <mat-card-content>
+        This SvS prep round isn't available — it may not exist, or may no longer be accepting
+        submissions.
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-stroked-button routerLink="/">Back to rounds</button>
+      </mat-card-actions>
     </mat-card>
   }
 </main>

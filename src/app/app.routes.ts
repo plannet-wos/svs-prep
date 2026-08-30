@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { HomeComponent } from './features/home/home';
 import { SurveyComponent } from './features/survey/survey';
 import { LoginComponent } from './features/login/login';
 import { SvsFormListComponent } from './features/admin/form-list/form-list';
@@ -6,7 +7,8 @@ import { SvsFormEditorComponent } from './features/admin/form-editor/form-editor
 import { superadminGuard } from './core/guards/superadmin.guard';
 
 export const routes: Routes = [
-  { path: '', component: SurveyComponent },
+  { path: '', component: HomeComponent },
+  { path: 'survey/:id', component: SurveyComponent },
   { path: 'login', component: LoginComponent },
   { path: 'admin', component: SvsFormListComponent, canActivate: [superadminGuard] },
   { path: 'admin/new', component: SvsFormEditorComponent, canActivate: [superadminGuard] },

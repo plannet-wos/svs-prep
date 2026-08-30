@@ -29,6 +29,21 @@
     <div class="form-cards">
       @for (form of items(); track form.id) {
         <mat-card class="form-card" [routerLink]="['/admin', form.id]">
+          <button
+            mat-icon-button
+            class="delete-btn"
+            type="button"
+            [disabled]="deletingId() === form.id"
+            (click)="delete(form, $event)"
+            aria-label="Delete this form"
+            matTooltip="Delete"
+          >
+            @if (deletingId() === form.id) {
+              <mat-progress-spinner diameter="20" mode="indeterminate" />
+            } @else {
+              <mat-icon>delete</mat-icon>
+            }
+          </button>
           <mat-card-header>
             <mat-card-title>Battle: {{ form.battleDate }}</mat-card-title>
             <mat-card-subtitle>Highest FC unlocked: FC{{ form.highestFcLevel }}</mat-card-subtitle>

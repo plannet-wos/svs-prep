@@ -1,0 +1,53 @@
+<main class="page">
+  <header class="intro">
+    <h1><img src="logo.png" alt="" class="page-logo" /> SvS Preparation</h1>
+    <p>Pick the round you're signing up for.</p>
+  </header>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-progress-spinner diameter="32" mode="indeterminate" />
+    </div>
+  } @else if (!items().length) {
+    <mat-card>
+      <mat-card-content>No SvS prep rounds have been created yet. Check back later.</mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="form-cards">
+      @for (form of items(); track form.id) {
+        <mat-card class="form-card">
+          <mat-card-header>
+            <mat-card-title>Battle: {{ formatBattleDate(form.battleDate) }}</mat-card-title>
+            <mat-card-subtitle>Highest FC unlocked: FC{{ form.highestFcLevel }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>
+              Construction: {{ form.constructionDay }} · Research: {{ form.researchDay }} · Training:
+              {{ form.trainingDay }}
+            </p>
+            <mat-chip-set>
+              @switch (formStatus(form)) {
+                @case ('draft') {
+                  <mat-chip>Opens {{ form.submissionsOpenAt | date: 'medium' }}</mat-chip>
+                }
+                @case ('open') {
+                  <mat-chip class="status-open">Open until {{ form.submissionsCloseAt | date: 'medium' }}</mat-chip>
+                }
+                @case ('closed') {
+                  <mat-chip>Closed</mat-chip>
+                }
+              }
+            </mat-chip-set>
+          </mat-card-content>
+          @if (formStatus(form) === 'open') {
+            <mat-card-actions>
+              <button mat-flat-button color="primary" [routerLink]="['/survey', form.id]">Fill out</button>
+            </mat-card-actions>
+          }
+        </mat-card>
+      }
+    </div>
+  }
+</main>
+
+<app-admin-link />
