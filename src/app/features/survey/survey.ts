@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -32,7 +32,10 @@ import {
   PLAYER_ID_PATTERN,
   requireMinTimes,
 } from '../../core/validators/svs-submission.validators';
-import { AssignmentStatusDialogComponent } from './assignment-status-dialog/assignment-status-dialog';
+import {
+  AssignmentStatusDialogComponent,
+  AssignmentStatusDialogResult,
+} from './assignment-status-dialog/assignment-status-dialog';
 import { DayAvailabilityPickerComponent } from './day-availability-picker/day-availability-picker';
 import { DiffDialogComponent } from './diff-dialog/diff-dialog';
 
@@ -68,6 +71,7 @@ function formatBattleDate(isoDate: string): string {
 export class SurveyComponent {
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly svsForms = inject(SvsFormService);
   private readonly submissions = inject(SvsSubmissionService);
   private readonly assignments = inject(SvsAssignmentService);
@@ -278,56 +282,44 @@ export class SurveyComponent {
 
       // Best-effort: the submission is already safely saved above, so a failure here shouldn't
       // block or scare the player if it fails — they just won't see the status popup below.
+      // Deliberately doesn't reset the form afterward either way: "Edit answers" (or dismissing
+      // the popup without a choice) means exactly that — keep what's here so they can tweak and
+      // resubmit — and "View assignments" navigates away from this page entirely.
       try {
         const status = await this.assignments.recomputeAndGetStatus(form.id, answers.playerId);
         const byDay = Object.fromEntries(status.map((s) => [s.day, s]));
-        this.dialog.open(AssignmentStatusDialogComponent, {
-          data: {
-            days: [
-              {
-                title: 'Construction',
-                dateLabel: this.buffDayLabel(form.constructionDay),
-                status: byDay['construction'],
+        const result = await firstValueFrom(
+          this.dialog
+            .open(AssignmentStatusDialogComponent, {
+              data: {
+                days: [
+                  {
+                    title: 'Construction',
+                    dateLabel: this.buffDayLabel(form.constructionDay),
+                    status: byDay['construction'],
+                  },
+                  {
+                    title: 'Research',
+                    dateLabel: this.buffDayLabel(form.researchDay),
+                    status: byDay['research'],
+                  },
+                  {
+                    title: 'Troop Training',
+                    dateLabel: this.buffDayLabel(form.trainingDay),
+                    status: byDay['training'],
+                  },
+                ],
               },
-              {
-                title: 'Research',
-                dateLabel: this.buffDayLabel(form.researchDay),
-                status: byDay['research'],
-              },
-              {
-                title: 'Troop Training',
-                dateLabel: this.buffDayLabel(form.trainingDay),
-                status: byDay['training'],
-              },
-            ],
-          },
-          width: '480px',
-        });
+              width: '480px',
+            })
+            .afterClosed(),
+        );
+        if ((result as AssignmentStatusDialogResult | undefined) === 'assignments') {
+          this.router.navigate(['/assignments', form.id]);
+        }
       } catch (err) {
         console.error('Failed to compute assignment status', err);
       }
-
-      this.form.reset({
-        allianceAndName: '',
-        playerId: '',
-        availableTimesConstruction: [],
-        availableTimesResearch: [],
-        availableTimesTraining: [],
-        daysConstruction: 0,
-        daysResearch: 0,
-        daysTraining: 0,
-        furnaceLevel: '',
-        rfc: 0,
-        fc: 0,
-        participation: '',
-        ultraValueCard: '',
-        fairProcess: '',
-        fairProcessDetails: '',
-        changeSuggestion: '',
-        feedback: '',
-      });
-      this.onFurnaceLevelChange(''); // form.reset() doesn't undo .disable() — re-enable for the next entry
-      this.existingSubmission.set(null);
     } catch (err) {
       console.error(err);
       this.snackBar.open('Something went wrong saving your answers — please try again.', 'OK', {

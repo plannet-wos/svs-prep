@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { PlayerDayStatus } from '../../../core/algorithms/assignment';
 
 export interface AssignmentStatusDialogDay {
@@ -16,6 +17,9 @@ export interface AssignmentStatusDialogData {
   days: AssignmentStatusDialogDay[];
 }
 
+/** What the player chose to do next — see survey.ts's submit(), which awaits this. */
+export type AssignmentStatusDialogResult = 'edit' | 'assignments';
+
 /**
  * Shown right after a successful submission (see survey.ts's submit()) — "here's where you stand
  * right now" for each buff day, computed live from every current submission (see
@@ -27,7 +31,7 @@ export interface AssignmentStatusDialogData {
 @Component({
   selector: 'app-assignment-status-dialog',
   standalone: true,
-  imports: [MatButtonModule, MatDialogModule, MatIconModule],
+  imports: [MatButtonModule, MatDialogModule, MatIconModule, MatTooltipModule],
   templateUrl: './assignment-status-dialog.html',
   styleUrl: './assignment-status-dialog.scss',
 })
