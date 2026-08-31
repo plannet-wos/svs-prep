@@ -233,6 +233,28 @@ export class SvsSubmissionEditorComponent {
     };
   }
 
+  /**
+   * Checks this save's non-empty pinned slots against every other submission's live pins for the
+   * same form — pins are rare and this list is small, so a full fetch right before saving is
+   * simpler than trying to keep a client-side index in sync. Excludes this submission itself so
+   * re-saving an existing pin unchanged never flags against its own prior value.
+   */
+  private async findPinCollisions(
+    answers: Omit<SvsSubmission, 'createdAt' | 'updatedAt'>,
+  ): Promise<{ dayTitle: string; slot: string; holder: SvsSubmission }[]> {
+    const others = (await this.submissions.getAllForForm(this.formId)).filter(
+      (s) => s.playerId !== answers.playerId,
+    );
+    const collisions: { dayTitle: string; slot: string; holder: SvsSubmission }[] = [];
+    for (const d of this.dayInputs) {
+      const slot = answers[d.pinControl];
+      if (!slot) continue;
+      const holder = others.find((s) => s[d.pinControl] === slot);
+      if (holder) collisions.push({ dayTitle: d.title, slot, holder });
+    }
+    return collisions;
+  }
+
   async save(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -254,6 +276,26 @@ export class SvsSubmissionEditorComponent {
               duration: 6000,
             },
           );
+          this.saving.set(false);
+          return;
+        }
+      }
+
+      const collisions = await this.findPinCollisions(answers);
+      if (collisions.length) {
+        const details = collisions
+          .map(
+            (c) =>
+              `• ${c.dayTitle}: ${c.slot} UTC is already pinned to ${c.holder.allianceAndName}`,
+          )
+          .join('\n');
+        const proceed = confirm(
+          `This pin collides with an existing one:\n\n${details}\n\n` +
+            `The algorithm will let whichever pin it processes first keep the slot, and fall the ` +
+            `other player back to normal matching over their own selected availability — it won't ` +
+            `error, but only one of them will actually get it. Save anyway?`,
+        );
+        if (!proceed) {
           this.saving.set(false);
           return;
         }
