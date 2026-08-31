@@ -36,6 +36,7 @@
 
 .subtitle-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 
@@ -43,6 +44,33 @@
   button mat-progress-spinner {
     margin-right: 4px;
     vertical-align: text-bottom;
+  }
+}
+
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 6px;
+  overflow: hidden;
+
+  button {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    color: var(--mat-sys-on-surface);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+
+    &:not(:first-child) {
+      border-left: 1px solid var(--mat-sys-outline-variant);
+    }
+
+    &.active {
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+      font-weight: 600;
+    }
   }
 }
 
@@ -83,6 +111,25 @@ th {
   position: sticky;
   top: 0;
   background: #1a1210;
+}
+
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    opacity: 1;
+    color: var(--mat-sys-primary);
+  }
+}
+
+.sort-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  vertical-align: text-top;
+  margin-left: 2px;
+  color: var(--mat-sys-primary);
 }
 
 tbody tr:hover {

@@ -1,35 +1,70 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './features/home/home';
-import { SurveyComponent } from './features/survey/survey';
-import { LoginComponent } from './features/login/login';
-import { SvsFormListComponent } from './features/admin/form-list/form-list';
-import { SvsFormEditorComponent } from './features/admin/form-editor/form-editor';
-import { SvsFormSubmissionsComponent } from './features/admin/form-submissions/form-submissions';
-import { SvsSubmissionEditorComponent } from './features/admin/submission-editor/submission-editor';
-import { SvsAssignmentsComponent } from './features/assignments/assignments';
 import { superadminGuard } from './core/guards/superadmin.guard';
 
+/**
+ * Only the home page is eagerly bundled into the initial chunk — everything else loads on demand
+ * via loadComponent. Most visitors only ever fill out the survey or check the live schedule, and
+ * never touch /login or /admin/*, so bundling those eagerly cost every visitor a download for
+ * pages they'd likely never open. This also gives real headroom against the production build's
+ * initial-bundle budget (see angular.json) for future features, rather than raising the ceiling
+ * every time a new page pulls in another Angular Material module.
+ */
 export const routes: Routes = [
   { path: '', component: HomeComponent },
-  { path: 'survey/:id', component: SurveyComponent },
-  { path: 'assignments/:id', component: SvsAssignmentsComponent },
-  { path: 'login', component: LoginComponent },
-  { path: 'admin', component: SvsFormListComponent, canActivate: [superadminGuard] },
-  { path: 'admin/new', component: SvsFormEditorComponent, canActivate: [superadminGuard] },
+  {
+    path: 'survey/:id',
+    loadComponent: () => import('./features/survey/survey').then((m) => m.SurveyComponent),
+  },
+  {
+    path: 'assignments/:id',
+    loadComponent: () =>
+      import('./features/assignments/assignments').then((m) => m.SvsAssignmentsComponent),
+  },
+  {
+    path: 'login',
+    loadComponent: () => import('./features/login/login').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'admin',
+    loadComponent: () =>
+      import('./features/admin/form-list/form-list').then((m) => m.SvsFormListComponent),
+    canActivate: [superadminGuard],
+  },
+  {
+    path: 'admin/new',
+    loadComponent: () =>
+      import('./features/admin/form-editor/form-editor').then((m) => m.SvsFormEditorComponent),
+    canActivate: [superadminGuard],
+  },
   {
     path: 'admin/:id/submissions',
-    component: SvsFormSubmissionsComponent,
+    loadComponent: () =>
+      import('./features/admin/form-submissions/form-submissions').then(
+        (m) => m.SvsFormSubmissionsComponent,
+      ),
     canActivate: [superadminGuard],
   },
   {
     path: 'admin/:id/submissions/new',
-    component: SvsSubmissionEditorComponent,
+    loadComponent: () =>
+      import('./features/admin/submission-editor/submission-editor').then(
+        (m) => m.SvsSubmissionEditorComponent,
+      ),
     canActivate: [superadminGuard],
   },
   {
     path: 'admin/:id/submissions/:playerId/edit',
-    component: SvsSubmissionEditorComponent,
+    loadComponent: () =>
+      import('./features/admin/submission-editor/submission-editor').then(
+        (m) => m.SvsSubmissionEditorComponent,
+      ),
     canActivate: [superadminGuard],
   },
-  { path: 'admin/:id', component: SvsFormEditorComponent, canActivate: [superadminGuard] },
+  {
+    path: 'admin/:id',
+    loadComponent: () =>
+      import('./features/admin/form-editor/form-editor').then((m) => m.SvsFormEditorComponent),
+    canActivate: [superadminGuard],
+  },
 ];

@@ -27,6 +27,22 @@
         }}
       </p>
       <div class="subtitle-actions">
+        <div class="view-toggle" role="group" aria-label="Table detail level">
+          <button
+            type="button"
+            [class.active]="viewMode() === 'simple'"
+            (click)="viewMode.set('simple')"
+          >
+            Simple
+          </button>
+          <button
+            type="button"
+            [class.active]="viewMode() === 'full'"
+            (click)="viewMode.set('full')"
+          >
+            Full
+          </button>
+        </div>
         <button mat-stroked-button [routerLink]="['/admin', form()!.id, 'submissions', 'new']">
           <mat-icon>person_add</mat-icon>
           Add submission
@@ -54,62 +70,164 @@
         <table>
           <thead>
             <tr>
-              <th>Alliance &amp; name</th>
-              <th>Player ID</th>
-              <th>Furnace level</th>
-              <th>RFC</th>
-              <th>FC</th>
-              <th>Construction days</th>
-              <th>Construction availability (UTC)</th>
-              <th>Research days</th>
-              <th>Research availability (UTC)</th>
-              <th>Training days</th>
-              <th>Training availability (UTC)</th>
-              <th>Participation</th>
-              <th>Ultra card</th>
-              <th>Fair?</th>
-              <th>Updated</th>
+              <th class="sortable" (click)="sortBy('allianceAndName')">
+                Alliance &amp; name
+                @if (sortColumn() === 'allianceAndName') {
+                  <mat-icon class="sort-icon">{{
+                    sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                  }}</mat-icon>
+                }
+              </th>
+              <th class="sortable" (click)="sortBy('playerId')">
+                Player ID
+                @if (sortColumn() === 'playerId') {
+                  <mat-icon class="sort-icon">{{
+                    sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                  }}</mat-icon>
+                }
+              </th>
+              @if (viewMode() === 'full') {
+                <th class="sortable" (click)="sortBy('furnaceLevel')">
+                  Furnace level
+                  @if (sortColumn() === 'furnaceLevel') {
+                    <mat-icon class="sort-icon">{{
+                      sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                    }}</mat-icon>
+                  }
+                </th>
+                <th class="sortable" (click)="sortBy('rfc')">
+                  RFC
+                  @if (sortColumn() === 'rfc') {
+                    <mat-icon class="sort-icon">{{
+                      sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                    }}</mat-icon>
+                  }
+                </th>
+                <th class="sortable" (click)="sortBy('fc')">
+                  FC
+                  @if (sortColumn() === 'fc') {
+                    <mat-icon class="sort-icon">{{
+                      sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                    }}</mat-icon>
+                  }
+                </th>
+              }
+              <th class="sortable" (click)="sortBy('daysConstruction')">
+                Construction days
+                @if (sortColumn() === 'daysConstruction') {
+                  <mat-icon class="sort-icon">{{
+                    sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                  }}</mat-icon>
+                }
+              </th>
+              @if (viewMode() === 'full') {
+                <th>Construction availability (UTC)</th>
+              }
+              <th class="sortable" (click)="sortBy('daysResearch')">
+                Research days
+                @if (sortColumn() === 'daysResearch') {
+                  <mat-icon class="sort-icon">{{
+                    sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                  }}</mat-icon>
+                }
+              </th>
+              @if (viewMode() === 'full') {
+                <th>Research availability (UTC)</th>
+              }
+              <th class="sortable" (click)="sortBy('daysTraining')">
+                Training days
+                @if (sortColumn() === 'daysTraining') {
+                  <mat-icon class="sort-icon">{{
+                    sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                  }}</mat-icon>
+                }
+              </th>
+              @if (viewMode() === 'full') {
+                <th>Training availability (UTC)</th>
+                <th class="sortable" (click)="sortBy('participation')">
+                  Participation
+                  @if (sortColumn() === 'participation') {
+                    <mat-icon class="sort-icon">{{
+                      sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                    }}</mat-icon>
+                  }
+                </th>
+                <th class="sortable" (click)="sortBy('ultraValueCard')">
+                  Ultra card
+                  @if (sortColumn() === 'ultraValueCard') {
+                    <mat-icon class="sort-icon">{{
+                      sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                    }}</mat-icon>
+                  }
+                </th>
+                <th class="sortable" (click)="sortBy('fairProcess')">
+                  Fair?
+                  @if (sortColumn() === 'fairProcess') {
+                    <mat-icon class="sort-icon">{{
+                      sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                    }}</mat-icon>
+                  }
+                </th>
+              }
+              <th class="sortable" (click)="sortBy('updatedAt')">
+                Updated
+                @if (sortColumn() === 'updatedAt') {
+                  <mat-icon class="sort-icon">{{
+                    sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                  }}</mat-icon>
+                }
+              </th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            @for (s of items(); track s.playerId) {
+            @for (s of sortedItems(); track s.playerId) {
               <tr>
                 <td>{{ s.allianceAndName }}</td>
                 <td>{{ s.playerId }}</td>
-                <td>{{ s.furnaceLevel }}</td>
-                <td>{{ s.rfc }}</td>
-                <td>{{ s.fc }}</td>
+                @if (viewMode() === 'full') {
+                  <td>{{ s.furnaceLevel }}</td>
+                  <td>{{ s.rfc }}</td>
+                  <td>{{ s.fc }}</td>
+                }
                 <td>{{ s.daysConstruction }}</td>
-                <td class="availability">
-                  {{ formatSlotRanges(s.availableTimesConstruction) }}
-                  @if (s.pinnedSlotConstruction) {
-                    <span class="pin-badge" matTooltip="Admin-pinned — always keeps this slot"
-                      >📌 {{ s.pinnedSlotConstruction }}</span
-                    >
-                  }
-                </td>
+                @if (viewMode() === 'full') {
+                  <td class="availability">
+                    {{ formatSlotRanges(s.availableTimesConstruction) }}
+                    @if (s.pinnedSlotConstruction) {
+                      <span class="pin-badge" matTooltip="Admin-pinned — always keeps this slot"
+                        >📌 {{ s.pinnedSlotConstruction }}</span
+                      >
+                    }
+                  </td>
+                }
                 <td>{{ s.daysResearch }}</td>
-                <td class="availability">
-                  {{ formatSlotRanges(s.availableTimesResearch) }}
-                  @if (s.pinnedSlotResearch) {
-                    <span class="pin-badge" matTooltip="Admin-pinned — always keeps this slot"
-                      >📌 {{ s.pinnedSlotResearch }}</span
-                    >
-                  }
-                </td>
+                @if (viewMode() === 'full') {
+                  <td class="availability">
+                    {{ formatSlotRanges(s.availableTimesResearch) }}
+                    @if (s.pinnedSlotResearch) {
+                      <span class="pin-badge" matTooltip="Admin-pinned — always keeps this slot"
+                        >📌 {{ s.pinnedSlotResearch }}</span
+                      >
+                    }
+                  </td>
+                }
                 <td>{{ s.daysTraining }}</td>
-                <td class="availability">
-                  {{ formatSlotRanges(s.availableTimesTraining) }}
-                  @if (s.pinnedSlotTraining) {
-                    <span class="pin-badge" matTooltip="Admin-pinned — always keeps this slot"
-                      >📌 {{ s.pinnedSlotTraining }}</span
-                    >
-                  }
-                </td>
-                <td>{{ s.participation }}</td>
-                <td>{{ s.ultraValueCard }}</td>
-                <td>{{ s.fairProcess }}</td>
+                @if (viewMode() === 'full') {
+                  <td class="availability">
+                    {{ formatSlotRanges(s.availableTimesTraining) }}
+                    @if (s.pinnedSlotTraining) {
+                      <span class="pin-badge" matTooltip="Admin-pinned — always keeps this slot"
+                        >📌 {{ s.pinnedSlotTraining }}</span
+                      >
+                    }
+                  </td>
+                }
+                @if (viewMode() === 'full') {
+                  <td>{{ s.participation }}</td>
+                  <td>{{ s.ultraValueCard }}</td>
+                  <td>{{ s.fairProcess }}</td>
+                }
                 <td>{{ s.updatedAt | date: 'short' }}</td>
                 <td class="row-actions">
                   <button

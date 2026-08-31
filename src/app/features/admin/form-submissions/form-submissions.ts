@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -49,7 +49,24 @@ function formatSlotRanges(slots: string[]): string {
   return ranges.join(', ');
 }
 
-/** Admin-only: every submission for one SvS prep form, as a table. */
+/** Columns a header can sort by — deliberately excludes the availability arrays, which have no
+ *  single meaningful order. */
+type SortColumn =
+  | 'allianceAndName'
+  | 'playerId'
+  | 'furnaceLevel'
+  | 'rfc'
+  | 'fc'
+  | 'daysConstruction'
+  | 'daysResearch'
+  | 'daysTraining'
+  | 'participation'
+  | 'ultraValueCard'
+  | 'fairProcess'
+  | 'updatedAt';
+
+/** Admin-only: every submission for one SvS prep form, as a sortable table. "Simple" trims it down
+ *  to the columns needed for a quick roster glance; "Full" shows everything the survey collects. */
 @Component({
   selector: 'app-form-submissions',
   standalone: true,
@@ -80,6 +97,21 @@ export class SvsFormSubmissionsComponent {
   readonly items = signal<SvsSubmission[]>([]);
   readonly formatSlotRanges = formatSlotRanges;
 
+  readonly viewMode = signal<'simple' | 'full'>('full');
+  readonly sortColumn = signal<SortColumn>('allianceAndName');
+  readonly sortDirection = signal<'asc' | 'desc'>('asc');
+
+  readonly sortedItems = computed(() => {
+    const column = this.sortColumn();
+    const direction = this.sortDirection() === 'asc' ? 1 : -1;
+    return [...this.items()].sort((a, b) => {
+      const av = a[column];
+      const bv = b[column];
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * direction;
+      return String(av).localeCompare(String(bv)) * direction;
+    });
+  });
+
   constructor() {
     this.load();
   }
@@ -96,14 +128,22 @@ export class SvsFormSubmissionsComponent {
         this.submissions.getAllForForm(id),
       ]);
       this.form.set(form);
-      this.items.set(
-        submissions.sort((a, b) => a.allianceAndName.localeCompare(b.allianceAndName)),
-      );
+      this.items.set(submissions);
     } catch (err) {
       console.error(err);
       this.loadError.set(true);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /** Clicking the already-active column flips direction; clicking a new one sorts it ascending. */
+  sortBy(column: SortColumn): void {
+    if (this.sortColumn() === column) {
+      this.sortDirection.update((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
     }
   }
 
