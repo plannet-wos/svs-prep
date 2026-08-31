@@ -5,8 +5,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { SvsFormWithId } from '../../../core/models/svs-form.model';
 import { SvsSubmission } from '../../../core/models/svs-submission.model';
+import { SvsAssignmentService } from '../../../core/services/svs-assignment.service';
 import { SvsFormService } from '../../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../../core/services/svs-submission.service';
 
@@ -50,7 +52,14 @@ function formatSlotRanges(slots: string[]): string {
 @Component({
   selector: 'app-form-submissions',
   standalone: true,
-  imports: [DatePipe, RouterLink, MatButtonModule, MatCardModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [
+    DatePipe,
+    RouterLink,
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+  ],
   templateUrl: './form-submissions.html',
   styleUrl: './form-submissions.scss',
 })
@@ -58,9 +67,12 @@ export class SvsFormSubmissionsComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly forms = inject(SvsFormService);
   private readonly submissions = inject(SvsSubmissionService);
+  private readonly assignments = inject(SvsAssignmentService);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly loading = signal(true);
   readonly loadError = signal(false);
+  readonly recomputing = signal(false);
   readonly form = signal<SvsFormWithId | null>(null);
   readonly items = signal<SvsSubmission[]>([]);
   readonly formatSlotRanges = formatSlotRanges;
@@ -76,14 +88,38 @@ export class SvsFormSubmissionsComponent {
     this.loading.set(true);
     this.loadError.set(false);
     try {
-      const [form, submissions] = await Promise.all([this.forms.getById(id), this.submissions.getAllForForm(id)]);
+      const [form, submissions] = await Promise.all([
+        this.forms.getById(id),
+        this.submissions.getAllForForm(id),
+      ]);
       this.form.set(form);
-      this.items.set(submissions.sort((a, b) => a.allianceAndName.localeCompare(b.allianceAndName)));
+      this.items.set(
+        submissions.sort((a, b) => a.allianceAndName.localeCompare(b.allianceAndName)),
+      );
     } catch (err) {
       console.error(err);
       this.loadError.set(true);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /** Manual re-run — e.g. after fixing a submission by hand, or to nudge past a race-condition staleness. */
+  async recompute(): Promise<void> {
+    const form = this.form();
+    if (!form) return;
+
+    this.recomputing.set(true);
+    try {
+      await this.assignments.recompute(form.id);
+      this.snackBar.open('Assignments recomputed.', 'OK', { duration: 4000 });
+    } catch (err) {
+      console.error(err);
+      this.snackBar.open('Something went wrong recomputing assignments — please try again.', 'OK', {
+        duration: 6000,
+      });
+    } finally {
+      this.recomputing.set(false);
     }
   }
 }
