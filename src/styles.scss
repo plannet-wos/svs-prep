@@ -15,8 +15,11 @@ html {
 }
 
 body {
-  color-scheme: dark;
-  background-color: #0a0505;
+  // "light dark" (not a hardcoded "dark") is what makes every --mat-sys-* token's built-in
+  // light-dark(...) value actually follow the user's OS/browser preference — mat.theme() above
+  // already generates both light and dark values for every token, they just weren't being used.
+  color-scheme: light dark;
+  background-color: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
   margin: 0;
@@ -30,4 +33,35 @@ body {
 
 mat-card {
   border-radius: 10px !important;
+}
+
+// Shared, global (not per-component) so every form across the app gets the same treatment —
+// previously each form re-declared a much fainter version of this that was easy to miss.
+mat-error {
+  font-weight: 600;
+}
+
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mat-sys-error);
+  background: color-mix(in srgb, var(--mat-sys-error) 12%, transparent);
+  border: 1px solid var(--mat-sys-error);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+// Wrap a radio-group (or any control Material doesn't style red by itself) in
+// `<div class="question" [class.invalid]="control.invalid && control.touched">` to give the
+// whole question — not just the small error text below it — a visible highlight.
+.question.invalid {
+  border-left: 3px solid var(--mat-sys-error);
+  background: color-mix(in srgb, var(--mat-sys-error) 6%, transparent);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 0 -10px;
 }

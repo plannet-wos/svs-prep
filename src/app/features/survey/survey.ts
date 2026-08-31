@@ -28,9 +28,11 @@ import { SvsFormService } from '../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
 import {
   ALLIANCE_TAG_PATTERN,
+  MAX_SPEEDUP_DAYS,
   MIN_TIME_SLOTS,
   PLAYER_ID_PATTERN,
   requireMinTimes,
+  scrollToFirstInvalidControl,
 } from '../../core/validators/svs-submission.validators';
 import {
   AssignmentStatusDialogComponent,
@@ -79,6 +81,7 @@ export class SurveyComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   readonly minTimeSlots = MIN_TIME_SLOTS;
+  readonly maxSpeedupDays = MAX_SPEEDUP_DAYS;
   readonly participationOptions = PARTICIPATION_OPTIONS;
   readonly ultraCardOptions = ULTRA_CARD_OPTIONS;
   /** Exposed for the template's "You're FC{n} maxed" hint. */
@@ -102,9 +105,12 @@ export class SurveyComponent {
     availableTimesResearch: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
     availableTimesTraining: this.fb.control<string[]>([], requireMinTimes(MIN_TIME_SLOTS)),
 
-    daysConstruction: [0, [Validators.required, Validators.min(0)]],
-    daysResearch: [0, [Validators.required, Validators.min(0)]],
-    daysTraining: [0, [Validators.required, Validators.min(0)]],
+    daysConstruction: [
+      0,
+      [Validators.required, Validators.min(0), Validators.max(MAX_SPEEDUP_DAYS)],
+    ],
+    daysResearch: [0, [Validators.required, Validators.min(0), Validators.max(MAX_SPEEDUP_DAYS)]],
+    daysTraining: [0, [Validators.required, Validators.min(0), Validators.max(MAX_SPEEDUP_DAYS)]],
 
     furnaceLevel: ['', Validators.required],
     rfc: [0, [Validators.required, Validators.min(0)]],
@@ -112,7 +118,8 @@ export class SurveyComponent {
 
     participation: ['', Validators.required],
     ultraValueCard: ['', Validators.required],
-    fairProcess: ['' as '' | 'Yes' | 'No', Validators.required],
+    // Feedback section is fully optional — no validators on any field below.
+    fairProcess: ['' as '' | 'Yes' | 'No'],
     fairProcessDetails: [''],
     changeSuggestion: [''],
     feedback: [''],
@@ -253,7 +260,8 @@ export class SurveyComponent {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.snackBar.open('Please fill in all required fields.', 'OK', { duration: 4000 });
+      scrollToFirstInvalidControl(this.form);
+      this.snackBar.open('Please fix the highlighted fields.', 'OK', { duration: 4000 });
       return;
     }
 

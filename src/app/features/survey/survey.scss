@@ -94,10 +94,12 @@ mat-card-content.grid,
   gap: 24px;
 }
 
-.field-error {
-  color: var(--mat-sys-error);
-  font-size: 0.75rem;
-  margin: 2px 0 0;
+// .field-error and .question.invalid are defined globally in styles.scss, not here — they need
+// to apply the same way across every form in the app, and a component-scoped duplicate would
+// win over the shared one on specificity, silently undoing it.
+
+.question {
+  margin-bottom: 4px;
 }
 
 .field-hint {
