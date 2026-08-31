@@ -1,0 +1,88 @@
+<main class="page">
+  @if (loading()) {
+    <div class="loading">
+      <mat-progress-spinner diameter="32" mode="indeterminate" />
+    </div>
+  } @else if (loadError()) {
+    <mat-card>
+      <mat-card-content>Couldn't load the appointment schedule.</mat-card-content>
+      <mat-card-actions>
+        <button mat-stroked-button (click)="load()">Retry</button>
+      </mat-card-actions>
+    </mat-card>
+  } @else if (!form()) {
+    <mat-card>
+      <mat-card-content>Couldn't find that SvS prep round.</mat-card-content>
+      <mat-card-actions>
+        <button mat-stroked-button routerLink="/">Back to rounds</button>
+      </mat-card-actions>
+    </mat-card>
+  } @else {
+    <header class="intro">
+      <h1><mat-icon>event_available</mat-icon> Appointment Schedule</h1>
+      <p>
+        Battle: <strong>{{ form()!.battleDate }}</strong
+        >. Each player is slotted into one of the 30-min time slots they selected on the survey. If
+        someone with more speedup-days later needs your exact slot, you're automatically moved to a
+        different slot from your own selection — this page updates live, so keep it open if you want
+        to watch.
+      </p>
+      <label class="me-lookup">
+        <span>Highlight my assignments</span>
+        <input
+          type="text"
+          inputmode="numeric"
+          maxlength="9"
+          placeholder="Your player ID"
+          (input)="onPlayerIdInput($event)"
+        />
+      </label>
+    </header>
+
+    @for (section of sections; track section.day) {
+      <mat-card class="day-card">
+        <mat-card-header>
+          <mat-card-title>{{ section.title }} — {{ dayDateLabel(section.weekday) }}</mat-card-title>
+          <mat-card-subtitle>{{ filledCount(section.day) }} of 48 slots filled</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="slot-groups">
+            @for (group of slotGroups; track group.label) {
+              <div class="slot-group">
+                <div class="group-label">{{ group.label }}</div>
+                <div class="slot-row">
+                  @for (slot of group.slots; track slot) {
+                    @let entry = entryFor(section.day, slot);
+                    <div class="slot-cell" [class.filled]="entry" [class.me]="isMe(entry)">
+                      <span class="slot-time">{{ slot }}</span>
+                      @if (entry) {
+                        <span class="slot-holder">{{ entry.allianceAndName }}</span>
+                        <span class="slot-days">{{ entry.days }}d</span>
+                      } @else {
+                        <span class="slot-empty">open</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (unassigned(section.day); as pending) {
+            @if (pending.length) {
+              <div class="unassigned">
+                <mat-icon>info</mat-icon>
+                <span>
+                  Not yet scheduled ({{ pending.length }}):
+                  @for (p of pending; track p.playerId; let last = $last) {
+                    {{ p.allianceAndName }}{{ last ? '' : ', ' }}
+                  }
+                </span>
+              </div>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+  }
+</main>

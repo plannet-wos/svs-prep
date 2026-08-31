@@ -20,10 +20,26 @@
       <mat-card-content>Couldn't find that form.</mat-card-content>
     </mat-card>
   } @else {
-    <p class="subtitle">
-      Battle: {{ form()!.battleDate }} · {{ items().length }}
-      submission{{ items().length === 1 ? '' : 's' }}
-    </p>
+    <div class="subtitle-row">
+      <p class="subtitle">
+        Battle: {{ form()!.battleDate }} · {{ items().length }} submission{{
+          items().length === 1 ? '' : 's'
+        }}
+      </p>
+      <div class="subtitle-actions">
+        <button mat-stroked-button [routerLink]="['/assignments', form()!.id]">
+          View assignments
+        </button>
+        <button mat-stroked-button [disabled]="recomputing()" (click)="recompute()">
+          @if (recomputing()) {
+            <mat-progress-spinner diameter="18" mode="indeterminate" />
+          } @else {
+            <mat-icon>autorenew</mat-icon>
+          }
+          Recompute assignments
+        </button>
+      </div>
+    </div>
 
     @if (!items().length) {
       <mat-card>

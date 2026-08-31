@@ -23,6 +23,7 @@ import {
   prepWeekMonday,
 } from '../../core/models/svs-form.model';
 import { SvsSubmission } from '../../core/models/svs-submission.model';
+import { SvsAssignmentService } from '../../core/services/svs-assignment.service';
 import { SvsFormService } from '../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
 import { DayAvailabilityPickerComponent } from './day-availability-picker/day-availability-picker';
@@ -45,7 +46,12 @@ const PLAYER_ID_PATTERN = /^[0-9]{9}$/;
 /** 'YYYY-MM-DD' -> "Saturday 5 September 2026". */
 function formatBattleDate(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00`);
-  return date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 @Component({
@@ -71,6 +77,7 @@ export class SurveyComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly svsForms = inject(SvsFormService);
   private readonly submissions = inject(SvsSubmissionService);
+  private readonly assignments = inject(SvsAssignmentService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -175,7 +182,11 @@ export class SurveyComponent {
   onFurnaceLevelChange(level: string): void {
     const form = this.openForm();
     const maxed = !!form && level === maxedFurnaceLabel(form.highestFcLevel);
-    const fields = [this.form.controls.rfc, this.form.controls.fc, this.form.controls.daysConstruction];
+    const fields = [
+      this.form.controls.rfc,
+      this.form.controls.fc,
+      this.form.controls.daysConstruction,
+    ];
     for (const field of fields) {
       if (maxed) {
         field.setValue(0);
@@ -257,7 +268,10 @@ export class SurveyComponent {
       if (existing) {
         const confirmed = await firstValueFrom(
           this.dialog
-            .open(DiffDialogComponent, { data: { before: existing, after: answers }, width: '520px' })
+            .open(DiffDialogComponent, {
+              data: { before: existing, after: answers },
+              width: '520px',
+            })
             .afterClosed(),
         );
         if (!confirmed) {
@@ -268,6 +282,14 @@ export class SurveyComponent {
 
       await this.submissions.save(form.id, answers.playerId, answers, !existing);
       this.snackBar.open('Thanks! Your answers were saved.', 'OK', { duration: 5000 });
+
+      // Best-effort: the submission is already safely saved above, so a failure here shouldn't
+      // block or scare the player — the next submission (or an admin recompute) heals it. See
+      // SvsAssignmentService's doc comment on why this isn't done inside a transaction.
+      this.assignments
+        .recompute(form.id)
+        .catch((err) => console.error('Assignment recompute failed', err));
+
       this.form.reset({
         allianceAndName: '',
         playerId: '',

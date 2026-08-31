@@ -20,9 +20,30 @@
   }
 }
 
+.subtitle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .subtitle {
   opacity: 0.75;
-  margin: 0 0 16px;
+  margin: 0;
+}
+
+.subtitle-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  button mat-icon,
+  button mat-progress-spinner {
+    margin-right: 4px;
+    vertical-align: text-bottom;
+  }
 }
 
 .loading {
