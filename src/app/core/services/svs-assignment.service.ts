@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, Unsubscribe, doc, getDoc, onSnapshot, setDoc } from '@angular/fire/firestore';
-import { computeAssignment } from '../algorithms/assignment';
+import { computeAssignment, PlayerDayStatus, playerStatus } from '../algorithms/assignment';
 import { SvsAssignment } from '../models/svs-assignment.model';
 import { SvsSubmissionService } from './svs-submission.service';
 
@@ -25,11 +25,25 @@ export class SvsAssignmentService {
     return snap.exists() ? (snap.data() as SvsAssignment) : null;
   }
 
-  /** Live updates — the assignments page's whole point is showing moves as they happen. */
-  watch(formId: string, onNext: (assignment: SvsAssignment | null) => void): Unsubscribe {
-    return onSnapshot(doc(this.firestore, COLLECTION, formId), (snap) => {
-      onNext(snap.exists() ? (snap.data() as SvsAssignment) : null);
-    });
+  /**
+   * Live updates — the assignments page's whole point is showing moves as they happen. Firestore
+   * reports a listener failure (e.g. a security-rules gap, or being offline) via a separate error
+   * callback rather than calling `onNext`, so without `onError` a broken listener looks silently
+   * identical to "no one's been assigned yet" — always pass one for anywhere this matters.
+   */
+  watch(
+    formId: string,
+    onNext: (assignment: SvsAssignment | null) => void,
+    onError?: (error: unknown) => void,
+  ): Unsubscribe {
+    return onSnapshot(
+      doc(this.firestore, COLLECTION, formId),
+      (snap) => onNext(snap.exists() ? (snap.data() as SvsAssignment) : null),
+      (error) => {
+        console.error('svs_assignments listener failed', error);
+        onError?.(error);
+      },
+    );
   }
 
   /** Re-runs the assignment algorithm over every current submission for this form and saves it. */
@@ -37,5 +51,25 @@ export class SvsAssignmentService {
     const submissions = await this.submissions.getAllForForm(formId);
     const assignment = computeAssignment(formId, submissions);
     await setDoc(doc(this.firestore, COLLECTION, formId), assignment);
+  }
+
+  /**
+   * Recomputes and returns one player's live standing across all three buff days — used right
+   * after they submit, to show "here's where you stand right now". If persisting the shared doc
+   * fails (e.g. the same rules gap `watch` above guards against), the computed status is still
+   * returned — it doesn't depend on the write having succeeded, only on having read submissions.
+   */
+  async recomputeAndGetStatus(formId: string, playerId: string): Promise<PlayerDayStatus[]> {
+    const submissions = await this.submissions.getAllForForm(formId);
+    const assignment = computeAssignment(formId, submissions);
+    try {
+      await setDoc(doc(this.firestore, COLLECTION, formId), assignment);
+    } catch (error) {
+      console.error(
+        'Failed to persist svs_assignments (status popup still shows the computed result)',
+        error,
+      );
+    }
+    return playerStatus(submissions, assignment, playerId);
   }
 }
