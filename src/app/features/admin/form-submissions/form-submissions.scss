@@ -82,7 +82,7 @@
 
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--mat-sys-outline-variant, rgba(255, 255, 255, 0.12));
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 10px;
 }
 
@@ -96,7 +96,7 @@ th,
 td {
   text-align: left;
   padding: 8px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
   white-space: nowrap;
 }
 
@@ -110,7 +110,7 @@ th {
   font-weight: 500;
   position: sticky;
   top: 0;
-  background: #1a1210;
+  background: var(--mat-sys-surface-container);
 }
 
 th.sortable {
@@ -133,7 +133,7 @@ th.sortable {
 }
 
 tbody tr:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--mat-sys-on-surface) 4%, transparent);
 }
 
 .pin-badge {

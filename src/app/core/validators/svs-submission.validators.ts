@@ -1,4 +1,4 @@
-import { ValidationErrors } from '@angular/forms';
+import { AbstractControl, FormGroup, ValidationErrors } from '@angular/forms';
 
 /**
  * Shared between the public survey (features/survey/survey.ts) and the admin submission editor
@@ -19,3 +19,24 @@ export const ALLIANCE_TAG_PATTERN = /^\[[A-Za-z0-9]{3}\]/;
 
 /** In-game player IDs are exactly 9 digits. */
 export const PLAYER_ID_PATTERN = /^[0-9]{9}$/;
+
+/** A days-of-speedups field beyond this is almost certainly a typo (e.g. hours or minutes typed
+ *  into the days field) rather than a real value — see the "max" mat-error on each days input. */
+export const MAX_SPEEDUP_DAYS = 1000;
+
+/**
+ * Scrolls to and highlights the first invalid control after a failed submit — call right after
+ * `form.markAllAsTouched()`. Relies on every validatable field having a DOM element whose `id`
+ * matches its control name (see survey.html / submission-editor.html); Object.keys order matches
+ * the FormGroup's definition order, which in both forms matches the template's top-to-bottom
+ * layout, so "first" here really does mean "first on the page".
+ */
+export function scrollToFirstInvalidControl(form: FormGroup): void {
+  const firstInvalidName = Object.keys(form.controls).find(
+    (name) => (form.controls as Record<string, AbstractControl>)[name].invalid,
+  );
+  if (!firstInvalidName) return;
+  document
+    .getElementById(firstInvalidName)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}

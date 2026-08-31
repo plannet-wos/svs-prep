@@ -20,7 +20,7 @@
           <mat-card-title>Who</mat-card-title>
         </mat-card-header>
         <mat-card-content class="grid two">
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" id="allianceAndName">
             <mat-label>Alliance and name</mat-label>
             <input matInput formControlName="allianceAndName" placeholder="[HOC] plannet" />
             @if (
@@ -36,7 +36,7 @@
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" id="playerId">
             <mat-label>Player ID</mat-label>
             <input matInput formControlName="playerId" inputmode="numeric" maxlength="9" />
             @if (editingPlayerId) {
@@ -58,16 +58,27 @@
           <mat-card-title>Furnace level &amp; speedups</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <label class="section-label">Furnace Level</label>
-          <mat-radio-group
-            formControlName="furnaceLevel"
-            class="radio-col"
-            (change)="onFurnaceLevelChange($event.value)"
+          <div
+            class="question"
+            id="furnaceLevel"
+            [class.invalid]="
+              form.controls.furnaceLevel.invalid && form.controls.furnaceLevel.touched
+            "
           >
-            @for (opt of furnaceLevelOptions; track opt) {
-              <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+            <label class="section-label">Furnace Level</label>
+            <mat-radio-group
+              formControlName="furnaceLevel"
+              class="radio-col"
+              (change)="onFurnaceLevelChange($event.value)"
+            >
+              @for (opt of furnaceLevelOptions; track opt) {
+                <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+              }
+            </mat-radio-group>
+            @if (form.controls.furnaceLevel.invalid && form.controls.furnaceLevel.touched) {
+              <p class="field-error">Required</p>
             }
-          </mat-radio-group>
+          </div>
 
           <div class="grid two spaced">
             <mat-form-field appearance="outline">
@@ -93,14 +104,37 @@
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <mat-form-field appearance="outline" class="full">
+            <mat-form-field appearance="outline" class="full" [id]="d.daysControl">
               <mat-label>Days of speedups</mat-label>
-              <input matInput type="number" min="0" [formControlName]="d.daysControl" />
+              <input
+                matInput
+                type="number"
+                min="0"
+                [max]="maxSpeedupDays"
+                [formControlName]="d.daysControl"
+              />
+              @let daysControl = form.controls[d.daysControl];
+              @if (daysControl.hasError('required') && daysControl.touched) {
+                <mat-error>Required</mat-error>
+              } @else if (daysControl.hasError('max') && daysControl.touched) {
+                <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
+              } @else if (daysControl.hasError('min') && daysControl.touched) {
+                <mat-error>Can't be negative</mat-error>
+              }
             </mat-form-field>
-            <app-day-availability-picker
-              [formControlName]="d.availabilityControl"
-              [minSlots]="minTimeSlots"
-            />
+            <div
+              class="question"
+              [id]="d.availabilityControl"
+              [class.invalid]="
+                form.controls[d.availabilityControl].invalid &&
+                form.controls[d.availabilityControl].touched
+              "
+            >
+              <app-day-availability-picker
+                [formControlName]="d.availabilityControl"
+                [minSlots]="minTimeSlots"
+              />
+            </div>
 
             <mat-form-field appearance="outline" class="full pin-field">
               <mat-label>Pinned slot (admin override)</mat-label>
@@ -124,25 +158,50 @@
           <mat-card-title>Battle &amp; card</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <label class="section-label">SvS battle participation</label>
-          <mat-radio-group formControlName="participation" class="radio-col">
-            @for (opt of participationOptions; track opt) {
-              <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+          <div
+            class="question"
+            id="participation"
+            [class.invalid]="
+              form.controls.participation.invalid && form.controls.participation.touched
+            "
+          >
+            <label class="section-label">SvS battle participation</label>
+            <mat-radio-group formControlName="participation" class="radio-col">
+              @for (opt of participationOptions; track opt) {
+                <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+              }
+            </mat-radio-group>
+            @if (form.controls.participation.invalid && form.controls.participation.touched) {
+              <p class="field-error">Required</p>
             }
-          </mat-radio-group>
+          </div>
 
-          <label class="section-label">Ultra Value Monthly Card</label>
-          <mat-radio-group formControlName="ultraValueCard" class="radio-col">
-            @for (opt of ultraCardOptions; track opt) {
-              <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+          <div
+            class="question"
+            id="ultraValueCard"
+            [class.invalid]="
+              form.controls.ultraValueCard.invalid && form.controls.ultraValueCard.touched
+            "
+          >
+            <label class="section-label">Ultra Value Monthly Card</label>
+            <mat-radio-group formControlName="ultraValueCard" class="radio-col">
+              @for (opt of ultraCardOptions; track opt) {
+                <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+              }
+            </mat-radio-group>
+            @if (form.controls.ultraValueCard.invalid && form.controls.ultraValueCard.touched) {
+              <p class="field-error">Required</p>
             }
-          </mat-radio-group>
+          </div>
         </mat-card-content>
       </mat-card>
 
       <mat-card>
         <mat-card-header>
           <mat-card-title>Feedback</mat-card-title>
+          <mat-card-subtitle
+            >Optional — skip anything you don't have an opinion on.</mat-card-subtitle
+          >
         </mat-card-header>
         <mat-card-content>
           <label class="section-label">Finds process fair?</label>

@@ -12,7 +12,16 @@
               You have an appointment at <strong>{{ day.status.slot }} UTC</strong>.
             </div>
           } @else {
-            <div class="day-detail">You don't currently have an appointment for this day.</div>
+            <div class="day-detail">
+              You don't currently have an appointment for this day.
+              <mat-icon
+                class="help-icon"
+                matTooltip="Selecting more available time slots — especially ones you think will be less popular — improves your chances of getting one, since a slot can only go to someone who actually selected it."
+                matTooltipPosition="above"
+                aria-label="Why don't I have an appointment?"
+                >help_outline</mat-icon
+              >
+            </div>
           }
           @if (day.status.rank !== null) {
             <div class="day-rank">
@@ -32,5 +41,8 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-flat-button color="primary" mat-dialog-close>Got it</button>
+  <button mat-stroked-button [mat-dialog-close]="'edit'">Edit answers</button>
+  <button mat-flat-button color="primary" [mat-dialog-close]="'assignments'">
+    View assignments
+  </button>
 </mat-dialog-actions>

@@ -127,8 +127,5 @@
   }
 }
 
-.field-error {
-  color: var(--mat-sys-error);
-  font-size: 0.75rem;
-  margin: 8px 0 0;
-}
+// .field-error is defined globally in styles.scss, not here — see survey.scss's comment on why a
+// component-scoped duplicate would silently undo that.
