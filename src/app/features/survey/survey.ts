@@ -26,6 +26,7 @@ import { SvsSubmission } from '../../core/models/svs-submission.model';
 import { SvsAssignmentService } from '../../core/services/svs-assignment.service';
 import { SvsFormService } from '../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
+import { AssignmentStatusDialogComponent } from './assignment-status-dialog/assignment-status-dialog';
 import { DayAvailabilityPickerComponent } from './day-availability-picker/day-availability-picker';
 import { DiffDialogComponent } from './diff-dialog/diff-dialog';
 
@@ -284,11 +285,35 @@ export class SurveyComponent {
       this.snackBar.open('Thanks! Your answers were saved.', 'OK', { duration: 5000 });
 
       // Best-effort: the submission is already safely saved above, so a failure here shouldn't
-      // block or scare the player — the next submission (or an admin recompute) heals it. See
-      // SvsAssignmentService's doc comment on why this isn't done inside a transaction.
-      this.assignments
-        .recompute(form.id)
-        .catch((err) => console.error('Assignment recompute failed', err));
+      // block or scare the player if it fails — they just won't see the status popup below.
+      try {
+        const status = await this.assignments.recomputeAndGetStatus(form.id, answers.playerId);
+        const byDay = Object.fromEntries(status.map((s) => [s.day, s]));
+        this.dialog.open(AssignmentStatusDialogComponent, {
+          data: {
+            days: [
+              {
+                title: 'Construction',
+                dateLabel: this.buffDayLabel(form.constructionDay),
+                status: byDay['construction'],
+              },
+              {
+                title: 'Research',
+                dateLabel: this.buffDayLabel(form.researchDay),
+                status: byDay['research'],
+              },
+              {
+                title: 'Troop Training',
+                dateLabel: this.buffDayLabel(form.trainingDay),
+                status: byDay['training'],
+              },
+            ],
+          },
+          width: '480px',
+        });
+      } catch (err) {
+        console.error('Failed to compute assignment status', err);
+      }
 
       this.form.reset({
         allianceAndName: '',

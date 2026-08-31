@@ -8,6 +8,7 @@
       <mat-card-content>Couldn't load the appointment schedule.</mat-card-content>
       <mat-card-actions>
         <button mat-stroked-button (click)="load()">Retry</button>
+        <button mat-stroked-button routerLink="/">Back to rounds</button>
       </mat-card-actions>
     </mat-card>
   } @else if (!form()) {
@@ -19,6 +20,9 @@
     </mat-card>
   } @else {
     <header class="intro">
+      <button mat-stroked-button class="back-link" routerLink="/">
+        <mat-icon>arrow_back</mat-icon> Back to rounds
+      </button>
       <h1><mat-icon>event_available</mat-icon> Appointment Schedule</h1>
       <p>
         Battle: <strong>{{ form()!.battleDate }}</strong
@@ -39,50 +43,65 @@
       </label>
     </header>
 
-    @for (section of sections; track section.day) {
-      <mat-card class="day-card">
-        <mat-card-header>
-          <mat-card-title>{{ section.title }} — {{ dayDateLabel(section.weekday) }}</mat-card-title>
-          <mat-card-subtitle>{{ filledCount(section.day) }} of 48 slots filled</mat-card-subtitle>
-        </mat-card-header>
+    @if (liveUpdatesError()) {
+      <mat-card class="live-error">
         <mat-card-content>
-          <div class="slot-groups">
-            @for (group of slotGroups; track group.label) {
-              <div class="slot-group">
-                <div class="group-label">{{ group.label }}</div>
-                <div class="slot-row">
-                  @for (slot of group.slots; track slot) {
-                    @let entry = entryFor(section.day, slot);
-                    <div class="slot-cell" [class.filled]="entry" [class.me]="isMe(entry)">
-                      <span class="slot-time">{{ slot }}</span>
-                      @if (entry) {
-                        <span class="slot-holder">{{ entry.allianceAndName }}</span>
-                        <span class="slot-days">{{ entry.days }}d</span>
-                      } @else {
-                        <span class="slot-empty">open</span>
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-          </div>
-
-          @if (unassigned(section.day); as pending) {
-            @if (pending.length) {
-              <div class="unassigned">
-                <mat-icon>info</mat-icon>
-                <span>
-                  Not yet scheduled ({{ pending.length }}):
-                  @for (p of pending; track p.playerId; let last = $last) {
-                    {{ p.allianceAndName }}{{ last ? '' : ', ' }}
-                  }
-                </span>
-              </div>
-            }
-          }
+          <mat-icon>error_outline</mat-icon>
+          <span
+            >Couldn't load the live schedule right now, so nothing below can be shown accurately —
+            this is a loading problem, not proof no one has an appointment yet. Try reloading the
+            page in a bit.</span
+          >
         </mat-card-content>
       </mat-card>
+    } @else {
+      @for (section of sections; track section.day) {
+        <mat-card class="day-card">
+          <mat-card-header>
+            <mat-card-title
+              >{{ section.title }} — {{ dayDateLabel(section.weekday) }}</mat-card-title
+            >
+            <mat-card-subtitle>{{ filledCount(section.day) }} of 48 slots filled</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="slot-groups">
+              @for (group of slotGroups; track group.label) {
+                <div class="slot-group">
+                  <div class="group-label">{{ group.label }}</div>
+                  <div class="slot-row">
+                    @for (slot of group.slots; track slot) {
+                      @let entry = entryFor(section.day, slot);
+                      <div class="slot-cell" [class.filled]="entry" [class.me]="isMe(entry)">
+                        <span class="slot-time">{{ slot }}</span>
+                        @if (entry) {
+                          <span class="slot-holder">{{ entry.allianceAndName }}</span>
+                          <span class="slot-days">{{ entry.days }}d</span>
+                        } @else {
+                          <span class="slot-empty">open</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (unassigned(section.day); as pending) {
+              @if (pending.length) {
+                <div class="unassigned">
+                  <mat-icon>info</mat-icon>
+                  <span>
+                    Not yet scheduled ({{ pending.length }}):
+                    @for (p of pending; track p.playerId; let last = $last) {
+                      {{ p.allianceAndName }}{{ last ? '' : ', ' }}
+                    }
+                  </span>
+                </div>
+              }
+            }
+          </mat-card-content>
+        </mat-card>
+      }
     }
   }
 </main>

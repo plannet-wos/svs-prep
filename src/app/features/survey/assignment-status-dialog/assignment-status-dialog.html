@@ -1,0 +1,36 @@
+<h2 mat-dialog-title>Your current appointment status</h2>
+
+<mat-dialog-content>
+  <div class="day-rows">
+    @for (day of data.days; track day.title) {
+      <div class="day-row" [class.seated]="day.status.seated">
+        <mat-icon>{{ day.status.seated ? 'check_circle' : 'schedule' }}</mat-icon>
+        <div class="day-text">
+          <div class="day-title">{{ day.title }} — {{ day.dateLabel }}</div>
+          @if (day.status.seated) {
+            <div class="day-detail">
+              You have an appointment at <strong>{{ day.status.slot }} UTC</strong>.
+            </div>
+          } @else {
+            <div class="day-detail">You don't currently have an appointment for this day.</div>
+          }
+          @if (day.status.rank !== null) {
+            <div class="day-rank">
+              Priority rank {{ day.status.rank }} of {{ day.status.total }}
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <p class="disclaimer">
+    <strong>This is temporary and subject to change as more players fill out the form.</strong> A
+    player with more speedup-days than you can still take your slot later, exactly as you may have
+    just taken someone else's.
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" mat-dialog-close>Got it</button>
+</mat-dialog-actions>

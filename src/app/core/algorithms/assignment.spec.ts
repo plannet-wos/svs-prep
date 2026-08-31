@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_SLOTS } from '../config/slot-grid';
 import { SvsSubmission } from '../models/svs-submission.model';
-import { computeAssignment, computeDayAssignment } from './assignment';
+import { computeAssignment, computeDayAssignment, playerStatus } from './assignment';
 
 /** Minimal fixture — only the fields computeDayAssignment reads actually vary per test. */
 function submission(
@@ -152,5 +152,74 @@ describe('computeAssignment', () => {
     expect(result.construction['09:00'].playerId).toBe('p1');
     expect(result.research['10:00'].playerId).toBe('p1');
     expect(result.training['11:00'].playerId).toBe('p1');
+  });
+});
+
+describe('playerStatus', () => {
+  it('reports seated + slot + rank 1 of 1 for the only contender', () => {
+    const subs = [
+      submission({ playerId: 'p1', availableTimesConstruction: ['09:00'], daysConstruction: 5 }),
+    ];
+    const assignment = computeAssignment('form1', subs);
+    const [construction] = playerStatus(subs, assignment, 'p1');
+    expect(construction).toEqual({
+      day: 'construction',
+      seated: true,
+      slot: '09:00',
+      rank: 1,
+      total: 1,
+    });
+  });
+
+  it('reports not seated, but still ranked, for a bumped-out lowest-priority contender', () => {
+    const subs = [
+      submission({ playerId: 'low', availableTimesConstruction: ['09:00'], daysConstruction: 1 }),
+      submission({ playerId: 'high', availableTimesConstruction: ['09:00'], daysConstruction: 10 }),
+    ];
+    const assignment = computeAssignment('form1', subs);
+    const [low] = playerStatus(subs, assignment, 'low');
+    expect(low).toEqual({ day: 'construction', seated: false, slot: null, rank: 2, total: 2 });
+  });
+
+  it('ranks per buff day independently, matching whichever day actually seats the player', () => {
+    const subs = [
+      submission({
+        playerId: 'p1',
+        availableTimesConstruction: ['09:00'],
+        availableTimesResearch: ['09:00'],
+        daysConstruction: 1,
+        daysResearch: 10,
+      }),
+      submission({
+        playerId: 'p2',
+        availableTimesConstruction: ['09:00'],
+        availableTimesResearch: ['09:00'],
+        daysConstruction: 10,
+        daysResearch: 1,
+      }),
+    ];
+    const assignment = computeAssignment('form1', subs);
+    const [construction, research] = playerStatus(subs, assignment, 'p1');
+    expect(construction).toEqual({
+      day: 'construction',
+      seated: false,
+      slot: null,
+      rank: 2,
+      total: 2,
+    });
+    expect(research).toEqual({ day: 'research', seated: true, slot: '09:00', rank: 1, total: 2 });
+  });
+
+  it('returns a null rank for a day the player selected no slots for', () => {
+    const subs = [
+      submission({
+        playerId: 'p1',
+        availableTimesConstruction: ['09:00'],
+        availableTimesResearch: [],
+      }),
+    ];
+    const assignment = computeAssignment('form1', subs);
+    const [, research] = playerStatus(subs, assignment, 'p1');
+    expect(research).toEqual({ day: 'research', seated: false, slot: null, rank: null, total: 0 });
   });
 });

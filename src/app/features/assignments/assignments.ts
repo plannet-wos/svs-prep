@@ -1,5 +1,6 @@
 import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -37,7 +38,7 @@ interface BuffDaySection {
 @Component({
   selector: 'app-assignments',
   standalone: true,
-  imports: [RouterLink, MatCardModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [RouterLink, MatButtonModule, MatCardModule, MatIconModule, MatProgressSpinnerModule],
   templateUrl: './assignments.html',
   styleUrl: './assignments.scss',
 })
@@ -51,6 +52,10 @@ export class SvsAssignmentsComponent implements OnDestroy {
 
   readonly loading = signal(true);
   readonly loadError = signal(false);
+  /** True if the live listener itself failed (e.g. a Firestore rules gap) — distinct from
+   *  loadError, and distinct from a legitimately empty schedule, so it isn't shown as "nobody's
+   *  been assigned yet" when the real problem is that no data could load at all. */
+  readonly liveUpdatesError = signal(false);
   readonly form = signal<SvsFormWithId | null>(null);
   readonly assignment = signal<SvsAssignment | null>(null);
   /** Alliance & name lookup for the unassigned lists, which only store playerIds. */
@@ -81,9 +86,12 @@ export class SvsAssignmentsComponent implements OnDestroy {
       );
 
       this.unsubscribeAssignment?.();
-      this.unsubscribeAssignment = this.assignmentsService.watch(id, (assignment) => {
-        this.assignment.set(assignment ?? emptyAssignment(id));
-      });
+      this.liveUpdatesError.set(false);
+      this.unsubscribeAssignment = this.assignmentsService.watch(
+        id,
+        (assignment) => this.assignment.set(assignment ?? emptyAssignment(id)),
+        () => this.liveUpdatesError.set(true),
+      );
     } catch (err) {
       console.error(err);
       this.loadError.set(true);
