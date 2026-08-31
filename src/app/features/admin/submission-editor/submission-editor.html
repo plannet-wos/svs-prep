@@ -1,0 +1,198 @@
+<main class="page">
+  <header class="admin-header">
+    <h1>
+      <mat-icon>{{ editingPlayerId ? 'edit_note' : 'person_add' }}</mat-icon>
+      {{ editingPlayerId ? 'Edit submission' : 'New submission' }}
+    </h1>
+    <button mat-stroked-button [routerLink]="['/admin', formId, 'submissions']">
+      Back to submissions
+    </button>
+  </header>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-progress-spinner diameter="32" mode="indeterminate" />
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="save()" class="editor">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Who</mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="grid two">
+          <mat-form-field appearance="outline">
+            <mat-label>Alliance and name</mat-label>
+            <input matInput formControlName="allianceAndName" placeholder="[HOC] plannet" />
+            @if (
+              form.controls.allianceAndName.hasError('required') &&
+              form.controls.allianceAndName.touched
+            ) {
+              <mat-error>Required</mat-error>
+            } @else if (
+              form.controls.allianceAndName.hasError('pattern') &&
+              form.controls.allianceAndName.touched
+            ) {
+              <mat-error>Must start with the alliance tag in brackets, e.g. [HOC]</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Player ID</mat-label>
+            <input matInput formControlName="playerId" inputmode="numeric" maxlength="9" />
+            @if (editingPlayerId) {
+              <mat-hint>Can't be changed once a submission exists.</mat-hint>
+            }
+            @if (form.controls.playerId.hasError('required') && form.controls.playerId.touched) {
+              <mat-error>Required</mat-error>
+            } @else if (
+              form.controls.playerId.hasError('pattern') && form.controls.playerId.touched
+            ) {
+              <mat-error>Must be exactly 9 digits</mat-error>
+            }
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Furnace level &amp; speedups</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <label class="section-label">Furnace Level</label>
+          <mat-radio-group
+            formControlName="furnaceLevel"
+            class="radio-col"
+            (change)="onFurnaceLevelChange($event.value)"
+          >
+            @for (opt of furnaceLevelOptions; track opt) {
+              <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+            }
+          </mat-radio-group>
+
+          <div class="grid two spaced">
+            <mat-form-field appearance="outline">
+              <mat-label>Refined FC (RFC)</mat-label>
+              <input matInput type="number" min="0" formControlName="rfc" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Normal FC</mat-label>
+              <input matInput type="number" min="0" formControlName="fc" />
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      @for (d of dayInputs; track d.day) {
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>
+              {{ d.title }}
+              @if (buffDayWeekday(d.day); as weekday) {
+                — {{ weekday }}
+              }
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Days of speedups</mat-label>
+              <input matInput type="number" min="0" [formControlName]="d.daysControl" />
+            </mat-form-field>
+            <app-day-availability-picker
+              [formControlName]="d.availabilityControl"
+              [minSlots]="minTimeSlots"
+            />
+
+            <mat-form-field appearance="outline" class="full pin-field">
+              <mat-label>Pinned slot (admin override)</mat-label>
+              <mat-select [formControlName]="d.pinControl">
+                <mat-option [value]="null">No override</mat-option>
+                @for (slot of allSlots; track slot) {
+                  <mat-option [value]="slot">{{ slot }} UTC</mat-option>
+                }
+              </mat-select>
+              <mat-hint>
+                If set, this player always keeps this exact slot for this day — it can never be
+                bumped, and doesn't need to be one of their selected times above.
+              </mat-hint>
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Battle &amp; card</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <label class="section-label">SvS battle participation</label>
+          <mat-radio-group formControlName="participation" class="radio-col">
+            @for (opt of participationOptions; track opt) {
+              <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+            }
+          </mat-radio-group>
+
+          <label class="section-label">Ultra Value Monthly Card</label>
+          <mat-radio-group formControlName="ultraValueCard" class="radio-col">
+            @for (opt of ultraCardOptions; track opt) {
+              <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+            }
+          </mat-radio-group>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Feedback</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <label class="section-label">Finds process fair?</label>
+          <mat-radio-group formControlName="fairProcess" class="radio-row">
+            <mat-radio-button value="Yes">Yes</mat-radio-button>
+            <mat-radio-button value="No">No</mat-radio-button>
+          </mat-radio-group>
+
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Fairness feedback</mat-label>
+            <textarea matInput formControlName="fairProcessDetails" rows="2"></textarea>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Suggested changes</mat-label>
+            <textarea matInput formControlName="changeSuggestion" rows="2"></textarea>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>General feedback</mat-label>
+            <textarea matInput formControlName="feedback" rows="2"></textarea>
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>
+
+      <div class="submit-row">
+        @if (editingPlayerId) {
+          <button
+            mat-stroked-button
+            type="button"
+            color="warn"
+            class="delete-btn"
+            [disabled]="deleting()"
+            (click)="delete()"
+          >
+            @if (deleting()) {
+              <mat-progress-spinner diameter="18" mode="indeterminate" />
+            } @else {
+              <mat-icon>delete</mat-icon>
+            }
+            Delete
+          </button>
+        }
+        <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+          @if (saving()) {
+            <mat-progress-spinner diameter="20" mode="indeterminate" />
+          } @else {
+            Save
+          }
+        </button>
+      </div>
+    </form>
+  }
+</main>

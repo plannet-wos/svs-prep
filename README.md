@@ -34,6 +34,14 @@ change per round (participation/Ultra Value Card choices). The public survey alw
 form's submission window currently contains "now"; with none open it shows a "no round open"
 message instead.
 
+**Admin submission management:** beyond viewing the submissions table, an admin can manually add a
+submission (`/admin/:id/submissions/new`) or edit/delete an existing one
+(`/admin/:id/submissions/:playerId/edit`) — the same fields the public survey collects, for
+correcting mistakes or entering a late/offline submission. The editor also exposes a **pinned
+slot** per buff day: set one and that player always keeps that exact slot, unbumpable by anyone
+regardless of speedup-days, and it doesn't even need to be one of their own selected times — see
+`core/algorithms/assignment.ts`'s pinning logic. Pinned submissions show a 📌 badge in the table.
+
 **Admin login:** superadmin-only, reusing the shared `accounts` collection / client-side
 password-hash-verifying-write scheme from foundry-planner and alliance-wiki (see
 `core/services/auth.service.ts` and `core/utils/password.util.ts`) — an existing superadmin account

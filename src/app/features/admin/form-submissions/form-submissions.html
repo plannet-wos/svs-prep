@@ -27,6 +27,10 @@
         }}
       </p>
       <div class="subtitle-actions">
+        <button mat-stroked-button [routerLink]="['/admin', form()!.id, 'submissions', 'new']">
+          <mat-icon>person_add</mat-icon>
+          Add submission
+        </button>
         <button mat-stroked-button [routerLink]="['/assignments', form()!.id]">
           View assignments
         </button>
@@ -65,6 +69,7 @@
               <th>Ultra card</th>
               <th>Fair?</th>
               <th>Updated</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -76,15 +81,59 @@
                 <td>{{ s.rfc }}</td>
                 <td>{{ s.fc }}</td>
                 <td>{{ s.daysConstruction }}</td>
-                <td class="availability">{{ formatSlotRanges(s.availableTimesConstruction) }}</td>
+                <td class="availability">
+                  {{ formatSlotRanges(s.availableTimesConstruction) }}
+                  @if (s.pinnedSlotConstruction) {
+                    <span class="pin-badge" matTooltip="Admin-pinned — always keeps this slot"
+                      >📌 {{ s.pinnedSlotConstruction }}</span
+                    >
+                  }
+                </td>
                 <td>{{ s.daysResearch }}</td>
-                <td class="availability">{{ formatSlotRanges(s.availableTimesResearch) }}</td>
+                <td class="availability">
+                  {{ formatSlotRanges(s.availableTimesResearch) }}
+                  @if (s.pinnedSlotResearch) {
+                    <span class="pin-badge" matTooltip="Admin-pinned — always keeps this slot"
+                      >📌 {{ s.pinnedSlotResearch }}</span
+                    >
+                  }
+                </td>
                 <td>{{ s.daysTraining }}</td>
-                <td class="availability">{{ formatSlotRanges(s.availableTimesTraining) }}</td>
+                <td class="availability">
+                  {{ formatSlotRanges(s.availableTimesTraining) }}
+                  @if (s.pinnedSlotTraining) {
+                    <span class="pin-badge" matTooltip="Admin-pinned — always keeps this slot"
+                      >📌 {{ s.pinnedSlotTraining }}</span
+                    >
+                  }
+                </td>
                 <td>{{ s.participation }}</td>
                 <td>{{ s.ultraValueCard }}</td>
                 <td>{{ s.fairProcess }}</td>
                 <td>{{ s.updatedAt | date: 'short' }}</td>
+                <td class="row-actions">
+                  <button
+                    mat-icon-button
+                    [routerLink]="['/admin', form()!.id, 'submissions', s.playerId, 'edit']"
+                    aria-label="Edit this submission"
+                    matTooltip="Edit"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button
+                    mat-icon-button
+                    [disabled]="deletingPlayerId() === s.playerId"
+                    (click)="delete(s)"
+                    aria-label="Delete this submission"
+                    matTooltip="Delete"
+                  >
+                    @if (deletingPlayerId() === s.playerId) {
+                      <mat-progress-spinner diameter="18" mode="indeterminate" />
+                    } @else {
+                      <mat-icon>delete</mat-icon>
+                    }
+                  </button>
+                </td>
               </tr>
             }
           </tbody>

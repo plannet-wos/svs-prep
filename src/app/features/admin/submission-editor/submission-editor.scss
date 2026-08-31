@@ -1,0 +1,100 @@
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+mat-card-content.grid,
+.grid {
+  display: grid;
+  gap: 12px;
+
+  &.two {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  &.spaced {
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 560px) {
+  .grid.two,
+  mat-card-content.grid.two {
+    grid-template-columns: 1fr;
+  }
+}
+
+.full {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.pin-field {
+  margin-top: 16px;
+}
+
+.section-label {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin: 12px 0 6px;
+}
+
+.radio-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.radio-row {
+  display: flex;
+  gap: 24px;
+}
+
+.submit-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 0 40px;
+
+  .delete-btn {
+    margin-right: auto;
+  }
+
+  button {
+    min-width: 100px;
+  }
+
+  mat-progress-spinner {
+    display: inline-block;
+  }
+}
