@@ -63,6 +63,14 @@ app's `svs_submissions`/`svs_assignments`, and battle-calculator's `saves`) live
 `firestore.rules` and no `"firestore"` key in `firebase.json`, so `firebase deploy` here only ever
 touches hosting.
 
+## Deploying
+
+Every push to `main` auto-deploys to Firebase Hosting via `.github/workflows/deploy.yml` (build,
+then `FirebaseExtended/action-hosting-deploy`) — no manual `firebase deploy` needed. That workflow
+authenticates with a `FIREBASE_SERVICE_ACCOUNT` repo secret (a Firebase Hosting-scoped service
+account key for `tal-coordinator`); rotate or replace it from the Firebase console under **Project
+settings → Service accounts** if it's ever revoked.
+
 ## Contributing
 
 Fork the repo, create a branch, open a PR. No write access needed.
