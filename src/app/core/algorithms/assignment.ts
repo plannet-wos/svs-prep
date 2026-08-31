@@ -5,6 +5,7 @@ import {
   BUFF_DAYS,
   BuffDay,
   DAYS_FIELD,
+  PINNED_SLOT_FIELD,
   SvsAssignment,
 } from '../models/svs-assignment.model';
 import { SvsSubmission } from '../models/svs-submission.model';
@@ -31,6 +32,14 @@ import { SvsSubmission } from '../models/svs-submission.model';
  * incrementally — with realistic roster sizes this is microseconds, and it sidesteps any chance of
  * incremental bump-chain bugs. Deterministic given the same submissions, so re-running it never
  * "shuffles" existing assignments beyond what genuinely changed.
+ *
+ * An admin can override all of this for one player/day at a time (see
+ * features/admin/submission-editor and SvsSubmission.pinnedSlot*): a pinned slot is seated before
+ * the algorithm runs and is never contestable — no priority, however high, can bump it, and it
+ * doesn't even need to be one of that player's own selected slots. Two submissions pinned to the
+ * same slot on the same day shouldn't happen (the admin editor prevents it), but if it ever does,
+ * whichever is processed first keeps the slot and the other falls back to normal matching over
+ * their own selected availability.
  */
 
 /**
@@ -66,6 +75,7 @@ export function computeDayAssignment(
   day: BuffDay,
 ): DayAssignmentResult {
   const availabilityField = AVAILABILITY_FIELD[day];
+  const pinnedField = PINNED_SLOT_FIELD[day];
   const slotOrder = new Map(ALL_SLOTS.map((slot, i) => [slot, i]));
 
   // Sorted by playerId so the algorithm's input order is deterministic regardless of the order
@@ -81,7 +91,19 @@ export function computeDayAssignment(
     }));
 
   const holder = new Map<string, Applicant>();
-  const free: Applicant[] = applicants.filter((a) => a.acceptable.length > 0);
+
+  // Pinned slots are seated first, outside the normal contest — see this file's doc comment.
+  const pinnedPlayerIds = new Set<string>();
+  for (const applicant of applicants) {
+    const pinnedSlot = applicant.submission[pinnedField] as string | null | undefined;
+    if (!pinnedSlot || holder.has(pinnedSlot)) continue; // no pin, or already claimed by an earlier pin
+    holder.set(pinnedSlot, applicant);
+    pinnedPlayerIds.add(applicant.submission.playerId);
+  }
+
+  const free: Applicant[] = applicants.filter(
+    (a) => !pinnedPlayerIds.has(a.submission.playerId) && a.acceptable.length > 0,
+  );
 
   while (free.length > 0) {
     const applicant = free.shift()!;
@@ -93,6 +115,8 @@ export function computeDayAssignment(
     const current = holder.get(slot);
     if (!current) {
       holder.set(slot, applicant);
+    } else if (pinnedPlayerIds.has(current.submission.playerId)) {
+      free.push(applicant); // pinned — never contestable, try the next selected slot
     } else if (comparePriority(applicant.submission, current.submission, day) < 0) {
       holder.set(slot, applicant);
       free.push(current); // bumped — try their next selected slot

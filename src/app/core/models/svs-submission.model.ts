@@ -49,13 +49,34 @@ export interface SvsSubmission {
   changeSuggestion: string;
   feedback: string;
 
+  /**
+   * Admin-only manual override (see features/admin/submission-editor and
+   * core/algorithms/assignment.ts) — when set, this player always keeps this exact slot for this
+   * buff day, bypassing the normal priority matching entirely: it can never be bumped, and it
+   * doesn't even need to be one of their own selected availableTimes slots. Absent/null means no
+   * override for that day.
+   */
+  pinnedSlotConstruction?: string | null;
+  pinnedSlotResearch?: string | null;
+  pinnedSlotTraining?: string | null;
+
   createdAt: number;
   updatedAt: number;
 }
 
-/** Field key -> human label, used by the diff dialog and any future review UI. */
+/**
+ * Field key -> human label, used by the diff dialog and any future review UI. Pin fields are
+ * admin-only and never touched by the public survey's resubmission flow, so they're excluded here.
+ */
 export const SVS_SUBMISSION_FIELD_LABELS: Record<
-  Exclude<keyof SvsSubmission, 'createdAt' | 'updatedAt'>,
+  Exclude<
+    keyof SvsSubmission,
+    | 'createdAt'
+    | 'updatedAt'
+    | 'pinnedSlotConstruction'
+    | 'pinnedSlotResearch'
+    | 'pinnedSlotTraining'
+  >,
   string
 > = {
   formId: 'SvS prep round',

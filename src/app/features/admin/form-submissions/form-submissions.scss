@@ -88,3 +88,30 @@ th {
 tbody tr:hover {
   background: rgba(255, 255, 255, 0.04);
 }
+
+.pin-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mat-sys-primary) 18%, transparent);
+  color: var(--mat-sys-primary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.row-actions {
+  white-space: nowrap;
+
+  button {
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}

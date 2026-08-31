@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -26,23 +26,15 @@ import { SvsSubmission } from '../../core/models/svs-submission.model';
 import { SvsAssignmentService } from '../../core/services/svs-assignment.service';
 import { SvsFormService } from '../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
+import {
+  ALLIANCE_TAG_PATTERN,
+  MIN_TIME_SLOTS,
+  PLAYER_ID_PATTERN,
+  requireMinTimes,
+} from '../../core/validators/svs-submission.validators';
 import { AssignmentStatusDialogComponent } from './assignment-status-dialog/assignment-status-dialog';
 import { DayAvailabilityPickerComponent } from './day-availability-picker/day-availability-picker';
 import { DiffDialogComponent } from './diff-dialog/diff-dialog';
-
-/** Players need a realistic spread of options for the assignment algorithm to work with, per day. */
-export const MIN_TIME_SLOTS = 5;
-
-function requireMinTimes(min: number) {
-  return (control: { value: string[] }): ValidationErrors | null =>
-    (control.value?.length ?? 0) >= min ? null : { minTimes: true };
-}
-
-/** Must start with a 3-character alliance tag in brackets, e.g. "[HOC] plannet". */
-const ALLIANCE_TAG_PATTERN = /^\[[A-Za-z0-9]{3}\]/;
-
-/** In-game player IDs are exactly 9 digits. */
-const PLAYER_ID_PATTERN = /^[0-9]{9}$/;
 
 /** 'YYYY-MM-DD' -> "Saturday 5 September 2026". */
 function formatBattleDate(isoDate: string): string {

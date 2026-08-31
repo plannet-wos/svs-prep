@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { SvsFormWithId } from '../../../core/models/svs-form.model';
 import { SvsSubmission } from '../../../core/models/svs-submission.model';
 import { SvsAssignmentService } from '../../../core/services/svs-assignment.service';
@@ -59,6 +60,7 @@ function formatSlotRanges(slots: string[]): string {
     MatCardModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
   ],
   templateUrl: './form-submissions.html',
   styleUrl: './form-submissions.scss',
@@ -73,6 +75,7 @@ export class SvsFormSubmissionsComponent {
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly recomputing = signal(false);
+  readonly deletingPlayerId = signal<string | null>(null);
   readonly form = signal<SvsFormWithId | null>(null);
   readonly items = signal<SvsSubmission[]>([]);
   readonly formatSlotRanges = formatSlotRanges;
@@ -120,6 +123,36 @@ export class SvsFormSubmissionsComponent {
       });
     } finally {
       this.recomputing.set(false);
+    }
+  }
+
+  async delete(submission: SvsSubmission): Promise<void> {
+    const form = this.form();
+    if (!form) return;
+
+    const confirmed = confirm(
+      `Delete the submission from ${submission.allianceAndName}? This can't be undone.`,
+    );
+    if (!confirmed) return;
+
+    this.deletingPlayerId.set(submission.playerId);
+    try {
+      await this.submissions.delete(form.id, submission.playerId);
+      this.items.update((items) => items.filter((s) => s.playerId !== submission.playerId));
+      // Best-effort — a stale schedule heals on the next submission or admin recompute either way.
+      this.assignments.recompute(form.id).catch((err) => console.error('Recompute failed', err));
+      this.snackBar.open('Submission deleted.', 'OK', { duration: 4000 });
+    } catch (err) {
+      console.error(err);
+      this.snackBar.open(
+        'Something went wrong deleting this submission — please try again.',
+        'OK',
+        {
+          duration: 6000,
+        },
+      );
+    } finally {
+      this.deletingPlayerId.set(null);
     }
   }
 }

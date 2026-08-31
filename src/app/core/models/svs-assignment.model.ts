@@ -16,6 +16,12 @@ export const DAYS_FIELD: Record<BuffDay, keyof SvsSubmission> = {
   research: 'daysResearch',
   training: 'daysTraining',
 };
+/** The admin-set manual-override field per day — see SvsSubmission.pinnedSlot* and assignment.ts. */
+export const PINNED_SLOT_FIELD: Record<BuffDay, keyof SvsSubmission> = {
+  construction: 'pinnedSlotConstruction',
+  research: 'pinnedSlotResearch',
+  training: 'pinnedSlotTraining',
+};
 
 /** One filled slot: who holds it, and how many speedup-days earned them priority for it. */
 export interface AssignmentEntry {

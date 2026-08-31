@@ -223,3 +223,70 @@ describe('playerStatus', () => {
     expect(research).toEqual({ day: 'research', seated: false, slot: null, rank: null, total: 0 });
   });
 });
+
+describe('pinned slots (admin override)', () => {
+  it('seats a pinned player at their pinned slot even if they never selected it', () => {
+    const subs = [
+      submission({
+        playerId: 'p1',
+        availableTimesConstruction: ['09:00'],
+        pinnedSlotConstruction: '15:00',
+      }),
+    ];
+    const { slots, unassignedPlayerIds } = computeDayAssignment(subs, 'construction');
+    expect(slots['15:00'].playerId).toBe('p1');
+    expect(slots['09:00']).toBeUndefined();
+    expect(unassignedPlayerIds).toEqual([]);
+  });
+
+  it('never lets a higher-priority contender bump a pinned slot', () => {
+    const subs = [
+      submission({
+        playerId: 'pinned',
+        availableTimesConstruction: ['09:00'],
+        daysConstruction: 1,
+        pinnedSlotConstruction: '09:00',
+      }),
+      submission({
+        playerId: 'high-priority',
+        availableTimesConstruction: ['09:00'],
+        daysConstruction: 100,
+      }),
+    ];
+    const { slots, unassignedPlayerIds } = computeDayAssignment(subs, 'construction');
+    expect(slots['09:00'].playerId).toBe('pinned');
+    expect(unassignedPlayerIds).toEqual(['high-priority']);
+  });
+
+  it('lets the first-processed pin win a slot collision, falling the other back to normal matching', () => {
+    const subs = [
+      submission({
+        playerId: 'a-first',
+        availableTimesConstruction: ['10:00'],
+        pinnedSlotConstruction: '09:00',
+      }),
+      submission({
+        playerId: 'b-second',
+        availableTimesConstruction: ['10:00'],
+        pinnedSlotConstruction: '09:00',
+      }),
+    ];
+    const { slots } = computeDayAssignment(subs, 'construction');
+    expect(slots['09:00'].playerId).toBe('a-first'); // sorted first by playerId
+    expect(slots['10:00'].playerId).toBe('b-second'); // fell back to their own selection
+  });
+
+  it('only pins the specified buff day — other days for the same player are unaffected', () => {
+    const subs = [
+      submission({
+        playerId: 'p1',
+        availableTimesConstruction: ['09:00'],
+        availableTimesResearch: ['10:00'],
+        pinnedSlotConstruction: '15:00',
+      }),
+    ];
+    const result = computeAssignment('form1', subs);
+    expect(result.construction['15:00'].playerId).toBe('p1');
+    expect(result.research['10:00'].playerId).toBe('p1');
+  });
+});

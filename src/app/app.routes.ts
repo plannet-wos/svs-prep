@@ -5,6 +5,7 @@ import { LoginComponent } from './features/login/login';
 import { SvsFormListComponent } from './features/admin/form-list/form-list';
 import { SvsFormEditorComponent } from './features/admin/form-editor/form-editor';
 import { SvsFormSubmissionsComponent } from './features/admin/form-submissions/form-submissions';
+import { SvsSubmissionEditorComponent } from './features/admin/submission-editor/submission-editor';
 import { SvsAssignmentsComponent } from './features/assignments/assignments';
 import { superadminGuard } from './core/guards/superadmin.guard';
 
@@ -18,6 +19,16 @@ export const routes: Routes = [
   {
     path: 'admin/:id/submissions',
     component: SvsFormSubmissionsComponent,
+    canActivate: [superadminGuard],
+  },
+  {
+    path: 'admin/:id/submissions/new',
+    component: SvsSubmissionEditorComponent,
+    canActivate: [superadminGuard],
+  },
+  {
+    path: 'admin/:id/submissions/:playerId/edit',
+    component: SvsSubmissionEditorComponent,
     canActivate: [superadminGuard],
   },
   { path: 'admin/:id', component: SvsFormEditorComponent, canActivate: [superadminGuard] },
