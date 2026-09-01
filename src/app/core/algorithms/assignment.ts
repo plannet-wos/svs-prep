@@ -134,9 +134,13 @@ export function computeDayAssignment(
     };
   }
 
+  // Only counts as "unassigned" if they actually entered the contest for this day (selected at
+  // least one slot) and still didn't get seated — someone who selected none (FC8-maxed on
+  // Construction, or anyone who opted out of this day entirely, see survey.ts) never had a shot
+  // at a slot in the first place, so listing them as "not yet scheduled" would be misleading.
   const seated = new Set(holder.values());
   const unassignedPlayerIds = applicants
-    .filter((a) => !seated.has(a))
+    .filter((a) => !seated.has(a) && a.acceptable.length > 0)
     .map((a) => a.submission.playerId);
 
   return { slots, unassignedPlayerIds };
