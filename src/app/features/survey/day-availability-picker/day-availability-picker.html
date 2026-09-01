@@ -1,9 +1,9 @@
-<div class="picker">
+<div class="picker" [class.disabled]="disabled">
   <div class="time-actions">
-    <button mat-stroked-button type="button" (click)="selectAll()">
+    <button mat-stroked-button type="button" [disabled]="disabled" (click)="selectAll()">
       <mat-icon>done_all</mat-icon> Select all
     </button>
-    <button mat-stroked-button type="button" (click)="clearAll()">
+    <button mat-stroked-button type="button" [disabled]="disabled" (click)="clearAll()">
       <mat-icon>clear</mat-icon> Clear
     </button>
     <span class="time-count">{{ value.length }} of 48 slots selected</span>
@@ -17,6 +17,7 @@
           class="group-toggle"
           [class.all]="groupState(group) === 'all'"
           [class.some]="groupState(group) === 'some'"
+          [disabled]="disabled"
           (click)="toggleGroup(group)"
         >
           <mat-icon>{{
@@ -37,6 +38,7 @@
               [class.selected]="isSlotChecked(slot)"
               [attr.aria-pressed]="isSlotChecked(slot)"
               [matTooltip]="localSlotLabel(slot) + ' local'"
+              [disabled]="disabled"
               (click)="toggleSlot(slot, !isSlotChecked(slot))"
             >
               {{ slot }}
