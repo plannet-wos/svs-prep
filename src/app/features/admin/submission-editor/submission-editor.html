@@ -80,6 +80,13 @@
             }
           </div>
 
+          @if (form.controls.rfc.disabled && svsForm(); as maxedForm) {
+            <p class="field-hint">
+              This player is {{ maxedFurnaceLabel(maxedForm.highestFcLevel) }}, so RFC, FC, and the
+              speedup DAYS and availability for Construction below don't apply — grayed out,
+              cleared, and skipped for Construction appointments.
+            </p>
+          }
           <div class="grid two spaced">
             <mat-form-field appearance="outline">
               <mat-label>Refined FC (RFC)</mat-label>
@@ -105,7 +112,7 @@
           </mat-card-header>
           <mat-card-content>
             <mat-form-field appearance="outline" class="full" [id]="d.daysControl">
-              <mat-label>Days of speedups</mat-label>
+              <mat-label>DAYS of speedups</mat-label>
               <input
                 matInput
                 type="number"

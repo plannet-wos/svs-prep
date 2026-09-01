@@ -194,22 +194,36 @@ export class SvsSubmissionEditorComponent {
     }[day];
   }
 
-  /** FC8/FC10/etc-maxed players have nothing left to build — RFC, FC, and construction days don't apply. */
+  /**
+   * FC8/FC10/etc-maxed players have nothing left to build — RFC, FC, and construction days don't
+   * apply, and they don't need to (or get to) select Construction availability either: clearing
+   * and disabling it here is what keeps them out of the Construction appointment contest, since
+   * the assignment algorithm (core/algorithms/assignment.ts) never considers an applicant who
+   * selected zero slots for a day.
+   */
   onFurnaceLevelChange(level: string): void {
     const svsForm = this.svsForm();
     const maxed = !!svsForm && level === maxedFurnaceLabel(svsForm.highestFcLevel);
-    const fields = [
+    const numberFields = [
       this.form.controls.rfc,
       this.form.controls.fc,
       this.form.controls.daysConstruction,
     ];
-    for (const field of fields) {
+    for (const field of numberFields) {
       if (maxed) {
         field.setValue(0);
         field.disable();
       } else {
         field.enable();
       }
+    }
+
+    const availability = this.form.controls.availableTimesConstruction;
+    if (maxed) {
+      availability.setValue([]);
+      availability.disable();
+    } else {
+      availability.enable();
     }
   }
 

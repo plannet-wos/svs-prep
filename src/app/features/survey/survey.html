@@ -110,8 +110,9 @@
 
           @if (form.controls.rfc.disabled) {
             <p class="field-hint">
-              You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so RFC, FC, and days for
-              Construction below don't apply — grayed out and zeroed.
+              You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so RFC, FC, and the speedup
+              DAYS and availability for Construction below don't apply — grayed out, cleared, and
+              skipped for Construction appointments.
             </p>
           }
           <div class="grid two spaced">
@@ -140,7 +141,7 @@
         </mat-card-header>
         <mat-card-content>
           <mat-form-field appearance="outline" class="full" id="daysConstruction">
-            <mat-label>How many days will you use for Construction?</mat-label>
+            <mat-label>How many DAYS will you use for Construction?</mat-label>
             <input
               matInput
               type="number"
@@ -192,7 +193,7 @@
         </mat-card-header>
         <mat-card-content>
           <mat-form-field appearance="outline" class="full" id="daysResearch">
-            <mat-label>How many days will you use for Research?</mat-label>
+            <mat-label>How many DAYS will you use for Research?</mat-label>
             <input
               matInput
               type="number"
@@ -243,7 +244,7 @@
         </mat-card-header>
         <mat-card-content>
           <mat-form-field appearance="outline" class="full" id="daysTraining">
-            <mat-label>How many days will you use for Troop Training?</mat-label>
+            <mat-label>How many DAYS will you use for Troop Training?</mat-label>
             <input
               matInput
               type="number"

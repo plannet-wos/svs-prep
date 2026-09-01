@@ -1,5 +1,11 @@
 .picker {
   display: block;
+
+  // FC8-maxed players don't select Construction availability — see survey.ts's
+  // onFurnaceLevelChange, which disables this control for them.
+  &.disabled {
+    opacity: 0.5;
+  }
 }
 
 .time-actions {
