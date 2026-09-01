@@ -82,9 +82,8 @@
 
           @if (form.controls.rfc.disabled && svsForm(); as maxedForm) {
             <p class="field-hint">
-              This player is {{ maxedFurnaceLabel(maxedForm.highestFcLevel) }}, so RFC, FC, and the
-              speedup DAYS and availability for Construction below don't apply — grayed out,
-              cleared, and skipped for Construction appointments.
+              This player is {{ maxedFurnaceLabel(maxedForm.highestFcLevel) }}, so RFC and FC below
+              don't apply — grayed out and zeroed.
             </p>
           }
           <div class="grid two spaced">
@@ -111,37 +110,59 @@
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <mat-form-field appearance="outline" class="full" [id]="d.daysControl">
-              <mat-label>DAYS of speedups</mat-label>
-              <input
-                matInput
-                type="number"
-                min="0"
-                [max]="maxSpeedupDays"
-                [formControlName]="d.daysControl"
-              />
-              @let daysControl = form.controls[d.daysControl];
-              @if (daysControl.hasError('required') && daysControl.touched) {
-                <mat-error>Required</mat-error>
-              } @else if (daysControl.hasError('max') && daysControl.touched) {
-                <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
-              } @else if (daysControl.hasError('min') && daysControl.touched) {
-                <mat-error>Can't be negative</mat-error>
-              }
-            </mat-form-field>
-            <div
-              class="question"
-              [id]="d.availabilityControl"
-              [class.invalid]="
-                form.controls[d.availabilityControl].invalid &&
-                form.controls[d.availabilityControl].touched
-              "
+            <mat-checkbox
+              [checked]="d.wanted()"
+              [disabled]="d.day === 'construction' && form.controls.rfc.disabled"
+              (change)="onWantedChange(d, $event.checked)"
             >
-              <app-day-availability-picker
-                [formControlName]="d.availabilityControl"
-                [minSlots]="minTimeSlots"
-              />
-            </div>
+              Player wants an appointment for {{ d.title }}
+            </mat-checkbox>
+            @if (
+              d.day === 'construction' && form.controls.rfc.disabled && svsForm();
+              as maxedForm
+            ) {
+              <p class="field-hint">
+                This player is {{ maxedFurnaceLabel(maxedForm.highestFcLevel) }}, so they're not
+                eligible for a Construction appointment.
+              </p>
+            } @else if (!d.wanted()) {
+              <p class="field-hint">
+                This player won't be considered for a {{ d.title }} appointment.
+              </p>
+            }
+            @if (d.wanted()) {
+              <mat-form-field appearance="outline" class="full" [id]="d.daysControl">
+                <mat-label>DAYS of speedups</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [max]="maxSpeedupDays"
+                  [formControlName]="d.daysControl"
+                />
+                @let daysControl = form.controls[d.daysControl];
+                @if (daysControl.hasError('required') && daysControl.touched) {
+                  <mat-error>Required</mat-error>
+                } @else if (daysControl.hasError('max') && daysControl.touched) {
+                  <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
+                } @else if (daysControl.hasError('min') && daysControl.touched) {
+                  <mat-error>Can't be negative</mat-error>
+                }
+              </mat-form-field>
+              <div
+                class="question"
+                [id]="d.availabilityControl"
+                [class.invalid]="
+                  form.controls[d.availabilityControl].invalid &&
+                  form.controls[d.availabilityControl].touched
+                "
+              >
+                <app-day-availability-picker
+                  [formControlName]="d.availabilityControl"
+                  [minSlots]="minTimeSlots"
+                />
+              </div>
+            }
 
             <mat-form-field appearance="outline" class="full pin-field">
               <mat-label>Pinned slot (admin override)</mat-label>

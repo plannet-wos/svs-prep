@@ -110,9 +110,8 @@
 
           @if (form.controls.rfc.disabled) {
             <p class="field-hint">
-              You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so RFC, FC, and the speedup
-              DAYS and availability for Construction below don't apply — grayed out, cleared, and
-              skipped for Construction appointments.
+              You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so RFC and FC below don't
+              apply — grayed out and zeroed.
             </p>
           }
           <div class="grid two spaced">
@@ -140,45 +139,62 @@
           >
         </mat-card-header>
         <mat-card-content>
-          <mat-form-field appearance="outline" class="full" id="daysConstruction">
-            <mat-label>How many DAYS will you use for Construction?</mat-label>
-            <input
-              matInput
-              type="number"
-              min="0"
-              [max]="maxSpeedupDays"
-              formControlName="daysConstruction"
-            />
-            @if (
-              form.controls.daysConstruction.hasError('required') &&
-              form.controls.daysConstruction.touched
-            ) {
-              <mat-error>Required</mat-error>
-            } @else if (
-              form.controls.daysConstruction.hasError('max') &&
-              form.controls.daysConstruction.touched
-            ) {
-              <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
-            } @else if (
-              form.controls.daysConstruction.hasError('min') &&
-              form.controls.daysConstruction.touched
-            ) {
-              <mat-error>Can't be negative</mat-error>
-            }
-          </mat-form-field>
-          <div
-            class="question"
-            id="availableTimesConstruction"
-            [class.invalid]="
-              form.controls.availableTimesConstruction.invalid &&
-              form.controls.availableTimesConstruction.touched
-            "
+          <mat-checkbox
+            [checked]="wantsConstruction()"
+            [disabled]="form.controls.rfc.disabled"
+            (change)="onWantsConstructionChange($event.checked)"
           >
-            <app-day-availability-picker
-              formControlName="availableTimesConstruction"
-              [minSlots]="minTimeSlots"
-            />
-          </div>
+            I want an appointment for Construction
+          </mat-checkbox>
+          @if (form.controls.rfc.disabled) {
+            <p class="field-hint">
+              You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so you're not eligible for
+              a Construction appointment.
+            </p>
+          } @else if (!wantsConstruction()) {
+            <p class="field-hint">You won't be considered for a Construction appointment.</p>
+          }
+          @if (wantsConstruction()) {
+            <mat-form-field appearance="outline" class="full" id="daysConstruction">
+              <mat-label>How many DAYS will you use for Construction?</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0"
+                [max]="maxSpeedupDays"
+                formControlName="daysConstruction"
+              />
+              @if (
+                form.controls.daysConstruction.hasError('required') &&
+                form.controls.daysConstruction.touched
+              ) {
+                <mat-error>Required</mat-error>
+              } @else if (
+                form.controls.daysConstruction.hasError('max') &&
+                form.controls.daysConstruction.touched
+              ) {
+                <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
+              } @else if (
+                form.controls.daysConstruction.hasError('min') &&
+                form.controls.daysConstruction.touched
+              ) {
+                <mat-error>Can't be negative</mat-error>
+              }
+            </mat-form-field>
+            <div
+              class="question"
+              id="availableTimesConstruction"
+              [class.invalid]="
+                form.controls.availableTimesConstruction.invalid &&
+                form.controls.availableTimesConstruction.touched
+              "
+            >
+              <app-day-availability-picker
+                formControlName="availableTimesConstruction"
+                [minSlots]="minTimeSlots"
+              />
+            </div>
+          }
         </mat-card-content>
       </mat-card>
 
@@ -192,42 +208,54 @@
           >
         </mat-card-header>
         <mat-card-content>
-          <mat-form-field appearance="outline" class="full" id="daysResearch">
-            <mat-label>How many DAYS will you use for Research?</mat-label>
-            <input
-              matInput
-              type="number"
-              min="0"
-              [max]="maxSpeedupDays"
-              formControlName="daysResearch"
-            />
-            @if (
-              form.controls.daysResearch.hasError('required') && form.controls.daysResearch.touched
-            ) {
-              <mat-error>Required</mat-error>
-            } @else if (
-              form.controls.daysResearch.hasError('max') && form.controls.daysResearch.touched
-            ) {
-              <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
-            } @else if (
-              form.controls.daysResearch.hasError('min') && form.controls.daysResearch.touched
-            ) {
-              <mat-error>Can't be negative</mat-error>
-            }
-          </mat-form-field>
-          <div
-            class="question"
-            id="availableTimesResearch"
-            [class.invalid]="
-              form.controls.availableTimesResearch.invalid &&
-              form.controls.availableTimesResearch.touched
-            "
+          <mat-checkbox
+            [checked]="wantsResearch()"
+            (change)="onWantsResearchChange($event.checked)"
           >
-            <app-day-availability-picker
-              formControlName="availableTimesResearch"
-              [minSlots]="minTimeSlots"
-            />
-          </div>
+            I want an appointment for Research
+          </mat-checkbox>
+          @if (!wantsResearch()) {
+            <p class="field-hint">You won't be considered for a Research appointment.</p>
+          }
+          @if (wantsResearch()) {
+            <mat-form-field appearance="outline" class="full" id="daysResearch">
+              <mat-label>How many DAYS will you use for Research?</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0"
+                [max]="maxSpeedupDays"
+                formControlName="daysResearch"
+              />
+              @if (
+                form.controls.daysResearch.hasError('required') &&
+                form.controls.daysResearch.touched
+              ) {
+                <mat-error>Required</mat-error>
+              } @else if (
+                form.controls.daysResearch.hasError('max') && form.controls.daysResearch.touched
+              ) {
+                <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
+              } @else if (
+                form.controls.daysResearch.hasError('min') && form.controls.daysResearch.touched
+              ) {
+                <mat-error>Can't be negative</mat-error>
+              }
+            </mat-form-field>
+            <div
+              class="question"
+              id="availableTimesResearch"
+              [class.invalid]="
+                form.controls.availableTimesResearch.invalid &&
+                form.controls.availableTimesResearch.touched
+              "
+            >
+              <app-day-availability-picker
+                formControlName="availableTimesResearch"
+                [minSlots]="minTimeSlots"
+              />
+            </div>
+          }
         </mat-card-content>
       </mat-card>
 
@@ -243,42 +271,54 @@
           >
         </mat-card-header>
         <mat-card-content>
-          <mat-form-field appearance="outline" class="full" id="daysTraining">
-            <mat-label>How many DAYS will you use for Troop Training?</mat-label>
-            <input
-              matInput
-              type="number"
-              min="0"
-              [max]="maxSpeedupDays"
-              formControlName="daysTraining"
-            />
-            @if (
-              form.controls.daysTraining.hasError('required') && form.controls.daysTraining.touched
-            ) {
-              <mat-error>Required</mat-error>
-            } @else if (
-              form.controls.daysTraining.hasError('max') && form.controls.daysTraining.touched
-            ) {
-              <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
-            } @else if (
-              form.controls.daysTraining.hasError('min') && form.controls.daysTraining.touched
-            ) {
-              <mat-error>Can't be negative</mat-error>
-            }
-          </mat-form-field>
-          <div
-            class="question"
-            id="availableTimesTraining"
-            [class.invalid]="
-              form.controls.availableTimesTraining.invalid &&
-              form.controls.availableTimesTraining.touched
-            "
+          <mat-checkbox
+            [checked]="wantsTraining()"
+            (change)="onWantsTrainingChange($event.checked)"
           >
-            <app-day-availability-picker
-              formControlName="availableTimesTraining"
-              [minSlots]="minTimeSlots"
-            />
-          </div>
+            I want an appointment for Troop Training
+          </mat-checkbox>
+          @if (!wantsTraining()) {
+            <p class="field-hint">You won't be considered for a Troop Training appointment.</p>
+          }
+          @if (wantsTraining()) {
+            <mat-form-field appearance="outline" class="full" id="daysTraining">
+              <mat-label>How many DAYS will you use for Troop Training?</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0"
+                [max]="maxSpeedupDays"
+                formControlName="daysTraining"
+              />
+              @if (
+                form.controls.daysTraining.hasError('required') &&
+                form.controls.daysTraining.touched
+              ) {
+                <mat-error>Required</mat-error>
+              } @else if (
+                form.controls.daysTraining.hasError('max') && form.controls.daysTraining.touched
+              ) {
+                <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
+              } @else if (
+                form.controls.daysTraining.hasError('min') && form.controls.daysTraining.touched
+              ) {
+                <mat-error>Can't be negative</mat-error>
+              }
+            </mat-form-field>
+            <div
+              class="question"
+              id="availableTimesTraining"
+              [class.invalid]="
+                form.controls.availableTimesTraining.invalid &&
+                form.controls.availableTimesTraining.touched
+              "
+            >
+              <app-day-availability-picker
+                formControlName="availableTimesTraining"
+                [minSlots]="minTimeSlots"
+              />
+            </div>
+          }
         </mat-card-content>
       </mat-card>
 

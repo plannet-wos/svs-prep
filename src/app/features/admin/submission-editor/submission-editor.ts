@@ -1,8 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -52,6 +53,7 @@ import { DayAvailabilityPickerComponent } from '../../survey/day-availability-pi
     RouterLink,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -79,7 +81,9 @@ export class SvsSubmissionEditorComponent {
   readonly allSlots = ALL_SLOTS;
   readonly maxedFurnaceLabel = maxedFurnaceLabel;
 
-  /** Drives the template's three buff-day cards without repeating per-day control names inline. */
+  /** Drives the template's three buff-day cards without repeating per-day control names inline.
+   *  `wanted` backs that day's "wants an appointment?" checkbox (default checked) — see
+   *  onWantedChange and onFurnaceLevelChange (Construction's is forced off while FC8/etc-maxed). */
   readonly dayInputs = [
     {
       day: 'construction' as const,
@@ -87,6 +91,7 @@ export class SvsSubmissionEditorComponent {
       daysControl: 'daysConstruction' as const,
       availabilityControl: 'availableTimesConstruction' as const,
       pinControl: 'pinnedSlotConstruction' as const,
+      wanted: signal(true),
     },
     {
       day: 'research' as const,
@@ -94,6 +99,7 @@ export class SvsSubmissionEditorComponent {
       daysControl: 'daysResearch' as const,
       availabilityControl: 'availableTimesResearch' as const,
       pinControl: 'pinnedSlotResearch' as const,
+      wanted: signal(true),
     },
     {
       day: 'training' as const,
@@ -101,6 +107,7 @@ export class SvsSubmissionEditorComponent {
       daysControl: 'daysTraining' as const,
       availabilityControl: 'availableTimesTraining' as const,
       pinControl: 'pinnedSlotTraining' as const,
+      wanted: signal(true),
     },
   ];
 
@@ -164,6 +171,7 @@ export class SvsSubmissionEditorComponent {
         if (existing) {
           this.form.patchValue(existing);
           this.onFurnaceLevelChange(existing.furnaceLevel);
+          this.syncWantedFromExisting(existing);
         } else {
           this.snackBar.open("Couldn't find that submission.", 'OK', { duration: 5000 });
         }
@@ -194,21 +202,49 @@ export class SvsSubmissionEditorComponent {
     }[day];
   }
 
-  /**
-   * FC8/FC10/etc-maxed players have nothing left to build — RFC, FC, and construction days don't
-   * apply, and they don't need to (or get to) select Construction availability either: clearing
-   * and disabling it here is what keeps them out of the Construction appointment contest, since
-   * the assignment algorithm (core/algorithms/assignment.ts) never considers an applicant who
-   * selected zero slots for a day.
-   */
+  /** Tracks whether the *previous* furnace-level change left us maxed, so switching between two
+   *  non-maxed levels never stomps on the admin's own Construction "wanted" choice (see
+   *  onFurnaceLevelChange). */
+  private wasMaxedFurnace = false;
+
+  private applyDayWanted(
+    wants: boolean,
+    daysControl: FormControl<number>,
+    availabilityControl: FormControl<string[]>,
+  ): void {
+    if (wants) {
+      daysControl.enable();
+      availabilityControl.enable();
+    } else {
+      daysControl.setValue(0);
+      daysControl.disable();
+      availabilityControl.setValue([]);
+      availabilityControl.disable();
+    }
+  }
+
+  /** Toggles a buff day's "wants an appointment?" checkbox — unchecking clears and disables that
+   *  day's days/availability fields, which is what excludes the player from that day's appointment
+   *  contest (core/algorithms/assignment.ts never considers an applicant who selected zero slots). */
+  onWantedChange(entry: (typeof this.dayInputs)[number], wants: boolean): void {
+    entry.wanted.set(wants);
+    this.applyDayWanted(
+      wants,
+      this.form.controls[entry.daysControl],
+      this.form.controls[entry.availabilityControl],
+    );
+  }
+
+  /** FC8/FC10/etc-maxed players have nothing left to build — RFC and FC don't apply, and they
+   *  aren't eligible for a Construction appointment at all, so its "wanted" checkbox is forced off
+   *  and locked (see the template) rather than left for the admin to toggle. */
   onFurnaceLevelChange(level: string): void {
     const svsForm = this.svsForm();
     const maxed = !!svsForm && level === maxedFurnaceLabel(svsForm.highestFcLevel);
-    const numberFields = [
-      this.form.controls.rfc,
-      this.form.controls.fc,
-      this.form.controls.daysConstruction,
-    ];
+    const wasMaxed = this.wasMaxedFurnace;
+    this.wasMaxedFurnace = maxed;
+
+    const numberFields = [this.form.controls.rfc, this.form.controls.fc];
     for (const field of numberFields) {
       if (maxed) {
         field.setValue(0);
@@ -218,12 +254,24 @@ export class SvsSubmissionEditorComponent {
       }
     }
 
-    const availability = this.form.controls.availableTimesConstruction;
+    const construction = this.dayInputs.find((d) => d.day === 'construction')!;
     if (maxed) {
-      availability.setValue([]);
-      availability.disable();
-    } else {
-      availability.enable();
+      this.onWantedChange(construction, false);
+    } else if (wasMaxed) {
+      // Coming back from maxed — the checkbox was locked off, so re-include by default rather
+      // than leave it stuck unchecked with no way for the admin to have unchecked it themselves.
+      this.onWantedChange(construction, true);
+    }
+    // Moving between two non-maxed levels: leave the admin's own Construction choice alone.
+  }
+
+  /** After loading an existing submission, restore each day's checkbox (and disabled state) to
+   *  match what was actually saved — an empty availability array means that day was previously
+   *  opted out of (Construction's own maxed-exclusion is already handled by onFurnaceLevelChange
+   *  above, called just before this). */
+  private syncWantedFromExisting(existing: SvsSubmission): void {
+    for (const d of this.dayInputs) {
+      if (!existing[d.availabilityControl].length) this.onWantedChange(d, false);
     }
   }
 

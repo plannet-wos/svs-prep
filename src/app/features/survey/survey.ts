@@ -1,9 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -59,6 +60,7 @@ function formatBattleDate(isoDate: string): string {
     ReactiveFormsModule,
     RouterLink,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     MatRadioModule,
@@ -182,21 +184,71 @@ export class SurveyComponent {
     return form ? `${day}, ${formatShortDate(dateForBuffDay(form.battleDate, day))}` : day;
   }
 
-  /**
-   * FC8/FC10/etc-maxed players have nothing left to build — RFC, FC, and construction days don't
-   * apply, and they don't need to (or get to) select Construction availability either: clearing
-   * and disabling it here is what keeps them out of the Construction appointment contest, since
-   * the assignment algorithm (core/algorithms/assignment.ts) never considers an applicant who
-   * selected zero slots for a day.
-   */
+  /** Backs each day's "do you want an appointment?" checkbox — default checked. Unchecking clears
+   *  and disables that day's days/availability fields (see applyDayWanted), which is what excludes
+   *  the player from that day's appointment contest: the assignment algorithm
+   *  (core/algorithms/assignment.ts) never considers an applicant who selected zero slots for a
+   *  day. Construction's is additionally forced off and locked while FC8/etc-maxed, below. */
+  readonly wantsConstruction = signal(true);
+  readonly wantsResearch = signal(true);
+  readonly wantsTraining = signal(true);
+  /** Tracks whether the *previous* furnace-level change left us maxed, so switching between two
+   *  non-maxed levels never stomps on a player's own Construction opt-out (see onFurnaceLevelChange). */
+  private wasMaxedFurnace = false;
+
+  private applyDayWanted(
+    wants: boolean,
+    daysControl: FormControl<number>,
+    availabilityControl: FormControl<string[]>,
+  ): void {
+    if (wants) {
+      daysControl.enable();
+      availabilityControl.enable();
+    } else {
+      daysControl.setValue(0);
+      daysControl.disable();
+      availabilityControl.setValue([]);
+      availabilityControl.disable();
+    }
+  }
+
+  onWantsConstructionChange(wants: boolean): void {
+    this.wantsConstruction.set(wants);
+    this.applyDayWanted(
+      wants,
+      this.form.controls.daysConstruction,
+      this.form.controls.availableTimesConstruction,
+    );
+  }
+
+  onWantsResearchChange(wants: boolean): void {
+    this.wantsResearch.set(wants);
+    this.applyDayWanted(
+      wants,
+      this.form.controls.daysResearch,
+      this.form.controls.availableTimesResearch,
+    );
+  }
+
+  onWantsTrainingChange(wants: boolean): void {
+    this.wantsTraining.set(wants);
+    this.applyDayWanted(
+      wants,
+      this.form.controls.daysTraining,
+      this.form.controls.availableTimesTraining,
+    );
+  }
+
+  /** FC8/FC10/etc-maxed players have nothing left to build — RFC and FC don't apply, and they
+   *  aren't eligible for a Construction appointment at all, so its "want an appointment?" checkbox
+   *  is forced off and locked (see the template) rather than left for them to toggle. */
   onFurnaceLevelChange(level: string): void {
     const form = this.openForm();
     const maxed = !!form && level === maxedFurnaceLabel(form.highestFcLevel);
-    const numberFields = [
-      this.form.controls.rfc,
-      this.form.controls.fc,
-      this.form.controls.daysConstruction,
-    ];
+    const wasMaxed = this.wasMaxedFurnace;
+    this.wasMaxedFurnace = maxed;
+
+    const numberFields = [this.form.controls.rfc, this.form.controls.fc];
     for (const field of numberFields) {
       if (maxed) {
         field.setValue(0);
@@ -206,13 +258,24 @@ export class SurveyComponent {
       }
     }
 
-    const availability = this.form.controls.availableTimesConstruction;
     if (maxed) {
-      availability.setValue([]);
-      availability.disable();
-    } else {
-      availability.enable();
+      this.onWantsConstructionChange(false);
+    } else if (wasMaxed) {
+      // Coming back from maxed — the checkbox was locked off, so re-include by default rather
+      // than leave it stuck unchecked with no way for the player to have unchecked it themselves.
+      this.onWantsConstructionChange(true);
     }
+    // Moving between two non-maxed levels: leave the player's own Construction choice alone.
+  }
+
+  /** After loading a previous submission, restore each day's checkbox (and disabled state) to
+   *  match what was actually saved — an empty availability array means they'd previously opted
+   *  out (Construction's own maxed-exclusion is already handled by onFurnaceLevelChange above,
+   *  called just before this). */
+  private syncWantedFromExisting(existing: SvsSubmission): void {
+    if (!existing.availableTimesConstruction.length) this.onWantsConstructionChange(false);
+    if (!existing.availableTimesResearch.length) this.onWantsResearchChange(false);
+    if (!existing.availableTimesTraining.length) this.onWantsTrainingChange(false);
   }
 
   async onPlayerIdBlur(): Promise<void> {
@@ -239,6 +302,7 @@ export class SurveyComponent {
     if (!existing) return;
     this.form.patchValue(existing);
     this.onFurnaceLevelChange(existing.furnaceLevel);
+    this.syncWantedFromExisting(existing);
     this.snackBar.open('Loaded your previous answers — edit and resubmit below.', 'OK', {
       duration: 4000,
     });

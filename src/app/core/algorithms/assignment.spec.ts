@@ -126,6 +126,17 @@ describe('computeDayAssignment', () => {
     expect(research['09:00'].playerId).toBe('p1');
   });
 
+  it('excludes a player who selected no slots at all from the unassigned list', () => {
+    // e.g. FC8-maxed on Construction, or anyone who opted out of a day entirely (see survey.ts) —
+    // they never entered the contest, so they shouldn't show up as "not yet scheduled" for it.
+    const subs = [
+      submission({ playerId: 'p1', availableTimesConstruction: ['09:00'], daysConstruction: 5 }),
+      submission({ playerId: 'opted-out', availableTimesConstruction: [], daysConstruction: 0 }),
+    ];
+    const { unassignedPlayerIds } = computeDayAssignment(subs, 'construction');
+    expect(unassignedPlayerIds).toEqual([]);
+  });
+
   it('leaves a player unassigned rather than placing them outside their selection when slots run out', () => {
     const subs = [
       submission({ playerId: 'p1', availableTimesConstruction: ['09:00'], daysConstruction: 5 }),
