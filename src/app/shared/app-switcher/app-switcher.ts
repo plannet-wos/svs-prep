@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-switcher',
@@ -11,7 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     <a
       mat-mini-fab
       class="switcher-fab"
-      href="https://plannet-wos.web.app"
+      [href]="plannetWosUrl"
       target="_self"
       matTooltip="Plannet WOS"
       aria-label="Go to Plannet WOS"
@@ -36,4 +37,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     `,
   ],
 })
-export class AppSwitcherComponent {}
+export class AppSwitcherComponent {
+  readonly plannetWosUrl = environment.plannetWosUrl;
+}
