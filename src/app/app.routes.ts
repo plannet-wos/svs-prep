@@ -74,4 +74,22 @@ export const routes: Routes = [
       import('./features/admin/form-editor/form-editor').then((m) => m.SvsFormEditorComponent),
     canActivate: [superadminGuard],
   },
+
+  // --- Legacy redirects (temporary) -----------------------------------------------
+  // /admin* links shared/bookmarked before the multi-state rollout had no :stateId
+  // segment. Redirect to state 3038 rather than 404. Literal segments (`new`,
+  // `submissions`) must stay listed before the `:id` catch-alls at the same depth,
+  // same ordering rule as the canonical routes above — Angular matches array order,
+  // not specificity. Segment counts never collide with the canonical routes, so this
+  // is otherwise unambiguous. Remove once this window has passed.
+  { path: 'admin', redirectTo: '3038/admin', pathMatch: 'full' },
+  { path: 'admin/new', redirectTo: '3038/admin/new', pathMatch: 'full' },
+  { path: 'admin/:id/submissions', redirectTo: '3038/admin/:id/submissions', pathMatch: 'full' },
+  { path: 'admin/:id/submissions/new', redirectTo: '3038/admin/:id/submissions/new', pathMatch: 'full' },
+  {
+    path: 'admin/:id/submissions/:playerId/edit',
+    redirectTo: '3038/admin/:id/submissions/:playerId/edit',
+    pathMatch: 'full',
+  },
+  { path: 'admin/:id', redirectTo: '3038/admin/:id', pathMatch: 'full' },
 ];
