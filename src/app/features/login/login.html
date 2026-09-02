@@ -6,32 +6,54 @@
       <mat-card-subtitle>SvS Preparation</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Username</mat-label>
-        <input matInput [(ngModel)]="username" (keyup.enter)="submit()" autofocus autocomplete="username" />
-      </mat-form-field>
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Password</mat-label>
-        <input
-          matInput
-          type="password"
-          [(ngModel)]="password"
-          (keyup.enter)="submit()"
-          autocomplete="current-password"
-        />
-      </mat-form-field>
-      @if (error) {
-        <p class="error">Invalid username or password.</p>
+      @if (!pendingMfaResolver()) {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput [(ngModel)]="email" (keyup.enter)="submit()" autofocus autocomplete="username" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input
+            matInput
+            type="password"
+            [(ngModel)]="password"
+            (keyup.enter)="submit()"
+            autocomplete="current-password"
+          />
+        </mat-form-field>
+        @if (error) {
+          <p class="error">Invalid email or password.</p>
+        }
+      } @else {
+        <p class="mfa-hint">Enter the 6-digit code from your authenticator app.</p>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Authenticator code</mat-label>
+          <input matInput [(ngModel)]="otp" (keyup.enter)="submitOtp()" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+        </mat-form-field>
+        @if (error) {
+          <p class="error">Invalid authenticator code.</p>
+        }
       }
     </mat-card-content>
     <mat-card-actions>
-      <button mat-flat-button color="primary" (click)="submit()" [disabled]="loading || !username || !password">
-        @if (loading) {
-          <mat-spinner diameter="20" />
-        } @else {
-          Login
-        }
-      </button>
+      @if (!pendingMfaResolver()) {
+        <button mat-flat-button color="primary" (click)="submit()" [disabled]="loading || !email || !password">
+          @if (loading) {
+            <mat-spinner diameter="20" />
+          } @else {
+            Login
+          }
+        </button>
+      } @else {
+        <button mat-flat-button color="primary" (click)="submitOtp()" [disabled]="loading || !otp">
+          @if (loading) {
+            <mat-spinner diameter="20" />
+          } @else {
+            Verify
+          }
+        </button>
+        <button mat-button (click)="cancelMfa()">Back</button>
+      }
     </mat-card-actions>
   </mat-card>
 </div>

@@ -4,7 +4,7 @@
       <mat-icon>{{ editingPlayerId ? 'edit_note' : 'person_add' }}</mat-icon>
       {{ editingPlayerId ? 'Edit submission' : 'New submission' }}
     </h1>
-    <button mat-stroked-button [routerLink]="['/admin', formId, 'submissions']">
+    <button mat-stroked-button [routerLink]="['/', stateId, 'admin', formId, 'submissions']">
       Back to submissions
     </button>
   </header>

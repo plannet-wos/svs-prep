@@ -67,6 +67,7 @@ export class SvsFormEditorComponent {
 
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly stateId = this.route.snapshot.paramMap.get('stateId')!;
   /** Present when editing an existing form; absent when creating a new one. */
   protected formId: string | null = null;
 
@@ -139,6 +140,7 @@ export class SvsFormEditorComponent {
 
     const v = this.form.getRawValue();
     const data: Omit<SvsForm, 'createdAt' | 'updatedAt'> = {
+      stateId: this.stateId,
       battleDate: toDateString(v.battleDate!),
       highestFcLevel: v.highestFcLevel,
       constructionDay: v.constructionDay,
@@ -155,7 +157,7 @@ export class SvsFormEditorComponent {
       } else {
         await this.forms.create(data);
       }
-      this.router.navigate(['/admin']);
+      this.router.navigate(['/', this.stateId, 'admin']);
     } catch (err) {
       console.error(err);
       this.snackBar.open('Something went wrong saving this form — please try again.', 'OK', { duration: 6000 });
@@ -165,6 +167,6 @@ export class SvsFormEditorComponent {
   }
 
   cancel(): void {
-    this.router.navigate(['/admin']);
+    this.router.navigate(['/', this.stateId, 'admin']);
   }
 }

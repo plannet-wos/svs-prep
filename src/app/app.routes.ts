@@ -9,9 +9,16 @@ import { superadminGuard } from './core/guards/superadmin.guard';
  * pages they'd likely never open. This also gives real headroom against the production build's
  * initial-bundle budget (see angular.json) for future features, rather than raising the ceiling
  * every time a new page pulls in another Angular Material module.
+ *
+ * :stateId gates the home listing and the admin pages (see the multi-state rollout plan) —
+ * bare `/` redirects to state 3038, the only state that existed before that rollout, same
+ * "transition default" used elsewhere in the suite. survey/:id and assignments/:id stay
+ * unprefixed: a form's generated ID is already globally unique, so there's nothing ambiguous
+ * for :stateId to disambiguate there, and it keeps shared links working unchanged.
  */
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
+  { path: '', redirectTo: '3038', pathMatch: 'full' },
+  { path: ':stateId', component: HomeComponent },
   {
     path: 'survey/:id',
     loadComponent: () => import('./features/survey/survey').then((m) => m.SurveyComponent),
@@ -26,19 +33,19 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/login').then((m) => m.LoginComponent),
   },
   {
-    path: 'admin',
+    path: ':stateId/admin',
     loadComponent: () =>
       import('./features/admin/form-list/form-list').then((m) => m.SvsFormListComponent),
     canActivate: [superadminGuard],
   },
   {
-    path: 'admin/new',
+    path: ':stateId/admin/new',
     loadComponent: () =>
       import('./features/admin/form-editor/form-editor').then((m) => m.SvsFormEditorComponent),
     canActivate: [superadminGuard],
   },
   {
-    path: 'admin/:id/submissions',
+    path: ':stateId/admin/:id/submissions',
     loadComponent: () =>
       import('./features/admin/form-submissions/form-submissions').then(
         (m) => m.SvsFormSubmissionsComponent,
@@ -46,7 +53,7 @@ export const routes: Routes = [
     canActivate: [superadminGuard],
   },
   {
-    path: 'admin/:id/submissions/new',
+    path: ':stateId/admin/:id/submissions/new',
     loadComponent: () =>
       import('./features/admin/submission-editor/submission-editor').then(
         (m) => m.SvsSubmissionEditorComponent,
@@ -54,7 +61,7 @@ export const routes: Routes = [
     canActivate: [superadminGuard],
   },
   {
-    path: 'admin/:id/submissions/:playerId/edit',
+    path: ':stateId/admin/:id/submissions/:playerId/edit',
     loadComponent: () =>
       import('./features/admin/submission-editor/submission-editor').then(
         (m) => m.SvsSubmissionEditorComponent,
@@ -62,7 +69,7 @@ export const routes: Routes = [
     canActivate: [superadminGuard],
   },
   {
-    path: 'admin/:id',
+    path: ':stateId/admin/:id',
     loadComponent: () =>
       import('./features/admin/form-editor/form-editor').then((m) => m.SvsFormEditorComponent),
     canActivate: [superadminGuard],

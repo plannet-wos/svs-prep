@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -33,8 +33,10 @@ export class SvsFormListComponent {
   private readonly forms = inject(SvsFormService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly snackBar = inject(MatSnackBar);
 
+  readonly stateId = this.route.snapshot.paramMap.get('stateId')!;
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly items = signal<SvsFormWithId[]>([]);
@@ -49,7 +51,7 @@ export class SvsFormListComponent {
     this.loading.set(true);
     this.loadError.set(false);
     try {
-      this.items.set(await this.forms.getAll());
+      this.items.set(await this.forms.getAllForState(this.stateId));
     } catch (err) {
       console.error(err);
       this.loadError.set(true);

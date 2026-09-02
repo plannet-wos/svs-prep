@@ -1,7 +1,7 @@
 <main class="page">
   <header class="admin-header">
     <h1><mat-icon>list_alt</mat-icon> Submissions</h1>
-    <button mat-stroked-button routerLink="/admin">Back to forms</button>
+    <button mat-stroked-button [routerLink]="['/', stateId, 'admin']">Back to forms</button>
   </header>
 
   @if (loading()) {
@@ -43,7 +43,7 @@
             Full
           </button>
         </div>
-        <button mat-stroked-button [routerLink]="['/admin', form()!.id, 'submissions', 'new']">
+        <button mat-stroked-button [routerLink]="['/', stateId, 'admin', form()!.id, 'submissions', 'new']">
           <mat-icon>person_add</mat-icon>
           Add submission
         </button>
@@ -232,7 +232,7 @@
                 <td class="row-actions">
                   <button
                     mat-icon-button
-                    [routerLink]="['/admin', form()!.id, 'submissions', s.playerId, 'edit']"
+                    [routerLink]="['/', stateId, 'admin', form()!.id, 'submissions', s.playerId, 'edit']"
                     aria-label="Edit this submission"
                     matTooltip="Edit"
                   >

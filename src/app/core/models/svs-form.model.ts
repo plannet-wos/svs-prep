@@ -21,6 +21,8 @@ export const FC_LEVEL_OPTIONS = [3, 5, 8, 10] as const;
 export type FcLevel = (typeof FC_LEVEL_OPTIONS)[number];
 
 export interface SvsForm {
+  /** Game server/state this round belongs to — see the multi-state rollout plan. */
+  stateId: string;
   /** 'YYYY-MM-DD', picked from a mat-datepicker. */
   battleDate: string;
   /** Highest Furnace Chief level unlocked this round — drives the furnace-level survey question. */

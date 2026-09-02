@@ -89,6 +89,7 @@ export class SvsFormSubmissionsComponent {
   private readonly assignments = inject(SvsAssignmentService);
   private readonly snackBar = inject(MatSnackBar);
 
+  readonly stateId = this.route.snapshot.paramMap.get('stateId')!;
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly recomputing = signal(false);

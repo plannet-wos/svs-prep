@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -36,6 +36,7 @@ function formatBattleDate(isoDate: string): string {
 })
 export class HomeComponent {
   private readonly svsForms = inject(SvsFormService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly loading = signal(true);
   readonly items = signal<SvsFormWithId[]>([]);
@@ -49,7 +50,8 @@ export class HomeComponent {
   async load(): Promise<void> {
     this.loading.set(true);
     try {
-      this.items.set(await this.svsForms.getAll());
+      const stateId = this.route.snapshot.paramMap.get('stateId')!;
+      this.items.set(await this.svsForms.getAllForState(stateId));
     } catch (err) {
       console.error(err);
       this.items.set([]); // falls back to the "no rounds" message rather than hanging

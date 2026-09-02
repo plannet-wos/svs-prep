@@ -22,7 +22,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
       <a
         mat-mini-fab
         class="admin-fab"
-        [routerLink]="inAdmin() ? '/' : '/admin'"
+        [routerLink]="inAdmin() ? ['/', stateId()] : ['/', stateId(), 'admin']"
         [matTooltip]="inAdmin() ? 'Back to home' : 'Admin'"
         [attr.aria-label]="inAdmin() ? 'Back to home' : 'Go to admin pages'"
       >
@@ -59,7 +59,12 @@ export class AdminLinkComponent {
     { initialValue: this.router.url },
   );
 
-  readonly inAdmin = computed(() => this.url().startsWith('/admin'));
+  /** First path segment when it's actually a state number, e.g. "3038" from "/3038/admin/xyz"
+   * — falls back to 3038 on pages with no state segment at all (login, survey/assignments,
+   * which are keyed by form ID, not a state). Numeric-only so "/login" or "/survey/xyz" is
+   * never mistaken for a state segment. */
+  readonly stateId = computed(() => this.url().match(/^\/(\d+)(?:\/|$)/)?.[1] || '3038');
+  readonly inAdmin = computed(() => /^\/[^/]+\/admin/.test(this.url()));
   /** The survey page has its own uncluttered layout — no admin FAB competing with the form. */
   readonly hidden = computed(() => this.url().startsWith('/survey'));
 }

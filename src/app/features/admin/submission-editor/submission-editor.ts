@@ -115,6 +115,7 @@ export class SvsSubmissionEditorComponent {
   readonly saving = signal(false);
   readonly deleting = signal(false);
   readonly formId: string = this.route.snapshot.paramMap.get('id')!;
+  readonly stateId: string = this.route.snapshot.paramMap.get('stateId')!;
   /** Present when editing an existing submission; absent when creating a new one. */
   readonly editingPlayerId: string | null = this.route.snapshot.paramMap.get('playerId');
   readonly svsForm = signal<SvsFormWithId | null>(null);
@@ -378,7 +379,7 @@ export class SvsSubmissionEditorComponent {
         .catch((err) => console.error('Recompute failed', err));
 
       this.snackBar.open('Submission saved.', 'OK', { duration: 4000 });
-      this.router.navigate(['/admin', this.formId, 'submissions']);
+      this.router.navigate(['/', this.stateId, 'admin', this.formId, 'submissions']);
     } catch (err) {
       console.error(err);
       this.snackBar.open('Something went wrong saving this submission — please try again.', 'OK', {
@@ -403,7 +404,7 @@ export class SvsSubmissionEditorComponent {
         .recompute(this.formId)
         .catch((err) => console.error('Recompute failed', err));
       this.snackBar.open('Submission deleted.', 'OK', { duration: 4000 });
-      this.router.navigate(['/admin', this.formId, 'submissions']);
+      this.router.navigate(['/', this.stateId, 'admin', this.formId, 'submissions']);
     } catch (err) {
       console.error(err);
       this.snackBar.open(
@@ -419,7 +420,7 @@ export class SvsSubmissionEditorComponent {
   }
 
   cancel(): void {
-    this.router.navigate(['/admin', this.formId, 'submissions']);
+    this.router.navigate(['/', this.stateId, 'admin', this.formId, 'submissions']);
   }
 
   /** Exposed so the template can note when this round's window isn't open (informational only —

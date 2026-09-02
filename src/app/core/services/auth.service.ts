@@ -1,68 +1,82 @@
-import { Injectable, inject } from '@angular/core';
-import { Firestore, doc, setDoc, serverTimestamp } from '@angular/fire/firestore';
-import { deriveSaltHex, hashPassword, withLoginTimeout } from '../utils/password.util';
-
-const SESSION_KEY = 'svs_prep_session';
-
-export interface AdminSession {
-  role: 'superadmin';
-  username: string;
-}
+import { Injectable, inject, signal, computed } from '@angular/core';
+import { Auth } from '@angular/fire/auth';
+import { Firestore, doc, onSnapshot } from '@angular/fire/firestore';
+import {
+  User,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  getMultiFactorResolver,
+  MultiFactorResolver,
+  MultiFactorError,
+  TotpMultiFactorGenerator,
+} from 'firebase/auth';
+import { Account } from '../models/account.model';
+import { RANK, Rank } from '../constants/roles';
 
 /**
- * Superadmin-only login against the shared `accounts` collection (same collection and hashing
- * scheme as foundry-planner/alliance-wiki — see password.util.ts). This app has no
- * alliance-scoped admin concept, so unlike foundry-planner's AuthService there's only ever the
- * superadmin path.
+ * Mirrors plannet-wos's auth.service.ts (that's where signup/TOTP-enrollment live now).
+ * svs-prep only ever gates on rank 0 (superadmin) — it has no alliance/state-admin concept
+ * of its own — but accounts are shared across the whole suite, so the same credentials and
+ * MFA enrollment that work anywhere else work here too. See the multi-state rollout plan.
  */
+export class MfaRequiredError extends Error {
+  constructor(public resolver: MultiFactorResolver) {
+    super('mfa-required');
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private auth = inject(Auth);
   private firestore = inject(Firestore);
 
-  // Accounts are unreadable by design (see firestore.rules) — there's no backend here to check
-  // credentials out-of-band, so "login" is an attempted write that only succeeds if every
-  // field, crucially including passwordHash, exactly matches what's already stored (Firestore
-  // rules require the write to touch nothing but `lastLoginAt`). Get the password or username
-  // wrong and the whole write is rejected — that rejection is what "incorrect credentials"
-  // means here.
-  async login(username: string, password: string): Promise<boolean> {
+  private readonly _user = signal<User | null>(null);
+  private readonly _account = signal<Account | null>(null);
+  private unsubAccount: (() => void) | null = null;
+
+  readonly user = this._user.asReadonly();
+  readonly account = this._account.asReadonly();
+  readonly isAuthenticated = computed(() => this._user() !== null);
+  readonly isSuperAdmin = computed(() => this._account()?.status === 'active' && this._account()?.rank === RANK.SUPERADMIN);
+  readonly rank = computed<Rank | null>(() => this._account()?.rank ?? null);
+
+  constructor() {
+    onAuthStateChanged(this.auth, (user) => {
+      this._user.set(user);
+      this.unsubAccount?.();
+      this.unsubAccount = null;
+      this._account.set(null);
+      if (user) {
+        this.unsubAccount = onSnapshot(doc(this.firestore, `accounts/${user.uid}`), (snap) => {
+          this._account.set(snap.exists() ? (snap.data() as Account) : null);
+        });
+      }
+    });
+  }
+
+  /** Throws MfaRequiredError if the account has TOTP enrolled — catch it and call completeMfaSignIn() with the user's code. */
+  async login(email: string, password: string): Promise<User> {
     try {
-      const passwordHash = await hashPassword(password, await deriveSaltHex(username));
-      await withLoginTimeout(
-        setDoc(doc(this.firestore, `accounts/${username}`), {
-          id: username,
-          username,
-          role: 'superadmin',
-          passwordHash,
-          lastLoginAt: serverTimestamp(),
-        }),
-      );
-      this.setSession({ role: 'superadmin', username });
-      return true;
-    } catch {
-      return false;
+      const cred = await signInWithEmailAndPassword(this.auth, email, password);
+      return cred.user;
+    } catch (err) {
+      if ((err as MultiFactorError)?.code === 'auth/multi-factor-auth-required') {
+        throw new MfaRequiredError(getMultiFactorResolver(this.auth, err as MultiFactorError));
+      }
+      throw err;
     }
   }
 
-  private setSession(session: AdminSession): void {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  }
-
-  getSession(): AdminSession | null {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as AdminSession;
-    } catch {
-      return null;
-    }
-  }
-
-  isSuperAdmin(): boolean {
-    return this.getSession()?.role === 'superadmin';
+  async completeMfaSignIn(resolver: MultiFactorResolver, otp: string): Promise<User> {
+    const hint = resolver.hints.find((h) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID);
+    if (!hint) throw new Error('No TOTP factor enrolled on this account');
+    const assertion = TotpMultiFactorGenerator.assertionForSignIn(hint.uid, otp);
+    const cred = await resolver.resolveSignIn(assertion);
+    return cred.user;
   }
 
   logout(): void {
-    sessionStorage.removeItem(SESSION_KEY);
+    signOut(this.auth);
   }
 }
