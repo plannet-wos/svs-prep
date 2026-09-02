@@ -29,7 +29,9 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
@@ -51,6 +53,14 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "staging": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -63,6 +73,9 @@
             },
             "development": {
               "buildTarget": "svs-prep:build:development"
+            },
+            "staging": {
+              "buildTarget": "svs-prep:build:staging"
             }
           },
           "defaultConfiguration": "development"
