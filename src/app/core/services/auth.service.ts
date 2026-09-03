@@ -16,9 +16,10 @@ import { RANK, Rank } from '../constants/roles';
 
 /**
  * Mirrors plannet-wos's auth.service.ts (that's where signup/TOTP-enrollment live now).
- * svs-prep only ever gates on rank 0 (superadmin) — it has no alliance/state-admin concept
- * of its own — but accounts are shared across the whole suite, so the same credentials and
- * MFA enrollment that work anywhere else work here too. See the multi-state rollout plan.
+ * svs-prep gates on state_admin-or-above (see stateScopedGuard) — it has no alliance/R5/R4
+ * concept of its own, svs_forms rounds are managed per-state — but accounts are shared across
+ * the whole suite, so the same credentials and MFA enrollment that work anywhere else work
+ * here too. See the multi-state rollout plan.
  */
 export class MfaRequiredError extends Error {
   constructor(public resolver: MultiFactorResolver) {
@@ -38,7 +39,8 @@ export class AuthService {
   readonly user = this._user.asReadonly();
   readonly account = this._account.asReadonly();
   readonly isAuthenticated = computed(() => this._user() !== null);
-  readonly isSuperAdmin = computed(() => this._account()?.status === 'active' && this._account()?.rank === RANK.SUPERADMIN);
+  readonly isActive = computed(() => this._account()?.status === 'active');
+  readonly isSuperAdmin = computed(() => this.isActive() && this._account()?.rank === RANK.SUPERADMIN);
   readonly rank = computed<Rank | null>(() => this._account()?.rank ?? null);
 
   /**

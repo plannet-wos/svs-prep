@@ -10,11 +10,11 @@ import { MultiFactorResolver } from 'firebase/auth';
 import { AuthService, MfaRequiredError } from '../../core/services/auth.service';
 
 /**
- * Superadmin-only login — see AuthService for the shared-accounts scheme, now backed by real
- * Firebase Auth. There's no state picker here yet (svs-prep has no per-state admin concept
- * of its own — superadmin is global): a successful login lands on state 3038's admin list,
- * same "only state that exists yet" default used elsewhere in the rollout — switch states by
- * editing the URL until this page grows a real switcher.
+ * State_admin-or-above login — see AuthService for the shared-accounts scheme, now backed by
+ * real Firebase Auth. A successful login lands on the signed-in account's OWN state's admin
+ * list (state_admin/its stateId), or state 3038 for superadmin — that rank is global with no
+ * home state of its own, and 3038 is still "the only state that existed pre-rollout" default
+ * used elsewhere; superadmin can switch states by editing the URL.
  */
 @Component({
   selector: 'app-login',
@@ -48,7 +48,8 @@ export class LoginComponent {
     this.error = false;
     try {
       await this.auth.login(this.email, this.password);
-      this.router.navigate(['3038', 'admin']);
+      await this.auth.whenReady(); // ensures account() reflects the just-signed-in user, not the previous (usually null) one
+      this.router.navigate([this.auth.account()?.stateId ?? '3038', 'admin']);
     } catch (err) {
       if (err instanceof MfaRequiredError) {
         this.pendingMfaResolver.set(err.resolver);
@@ -70,7 +71,8 @@ export class LoginComponent {
     this.error = false;
     try {
       await this.auth.completeMfaSignIn(resolver, this.otp);
-      this.router.navigate(['3038', 'admin']);
+      await this.auth.whenReady(); // see submit()'s comment
+      this.router.navigate([this.auth.account()?.stateId ?? '3038', 'admin']);
     } catch {
       this.error = true;
     } finally {
