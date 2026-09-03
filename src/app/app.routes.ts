@@ -15,9 +15,26 @@ import { superadminGuard } from './core/guards/superadmin.guard';
  * "transition default" used elsewhere in the suite. survey/:id and assignments/:id stay
  * unprefixed: a form's generated ID is already globally unique, so there's nothing ambiguous
  * for :stateId to disambiguate there, and it keeps shared links working unchanged.
+ *
+ * `:stateId` is a single, bare path segment, so it must come AFTER every other single-segment
+ * literal route (`login`, and the legacy bare `admin` redirect below) — Angular matches array
+ * order, not specificity, and a param route matches ANY single segment, "login"/"admin"
+ * included. Getting this wrong doesn't 404; it silently renders HomeComponent with stateId ==
+ * "login" (or "admin"), which is worse — it looks like the page is just broken, not misrouted.
+ * survey/:id and assignments/:id are two-segment paths, so they never collide with :stateId
+ * regardless of where they sit in this list; same for every other `admin/...` legacy redirect
+ * below, which all have 2+ segments.
  */
 export const routes: Routes = [
   { path: '', redirectTo: '3038', pathMatch: 'full' },
+  {
+    path: 'login',
+    loadComponent: () => import('./features/login/login').then((m) => m.LoginComponent),
+  },
+  // Legacy bookmark redirect (see the full comment further down with the rest of the
+  // /admin* redirects) — must be up here, not down there, for the same single-segment
+  // reason `login` is: it would otherwise be permanently shadowed by :stateId.
+  { path: 'admin', redirectTo: '3038/admin', pathMatch: 'full' },
   { path: ':stateId', component: HomeComponent },
   {
     path: 'survey/:id',
@@ -27,10 +44,6 @@ export const routes: Routes = [
     path: 'assignments/:id',
     loadComponent: () =>
       import('./features/assignments/assignments').then((m) => m.SvsAssignmentsComponent),
-  },
-  {
-    path: 'login',
-    loadComponent: () => import('./features/login/login').then((m) => m.LoginComponent),
   },
   {
     path: ':stateId/admin',
@@ -80,9 +93,9 @@ export const routes: Routes = [
   // segment. Redirect to state 3038 rather than 404. Literal segments (`new`,
   // `submissions`) must stay listed before the `:id` catch-alls at the same depth,
   // same ordering rule as the canonical routes above — Angular matches array order,
-  // not specificity. Segment counts never collide with the canonical routes, so this
-  // is otherwise unambiguous. Remove once this window has passed.
-  { path: 'admin', redirectTo: '3038/admin', pathMatch: 'full' },
+  // not specificity. These are all 2+ segments so none collide with :stateId; the bare
+  // single-segment `admin` redirect lives up near `login` instead, for that reason.
+  // Remove this whole block once this window has passed.
   { path: 'admin/new', redirectTo: '3038/admin/new', pathMatch: 'full' },
   { path: 'admin/:id/submissions', redirectTo: '3038/admin/:id/submissions', pathMatch: 'full' },
   { path: 'admin/:id/submissions/new', redirectTo: '3038/admin/:id/submissions/new', pathMatch: 'full' },
