@@ -20,6 +20,14 @@ export const ALLIANCE_TAG_PATTERN = /^\[[A-Za-z0-9]{3}\]/;
 /** In-game player IDs are exactly 9 digits. */
 export const PLAYER_ID_PATTERN = /^[0-9]{9}$/;
 
+/** Strips the leading "[TAG] " alliance tag off allianceAndName, leaving just the name the player
+ *  typed — used to prefill the name field of the "approve unknown player" dialog (see
+ *  features/admin/form-submissions's approve-player-dialog) with something more useful than the
+ *  raw free-text field, since the real alliance there is picked from a dropdown instead. */
+export function stripAllianceTag(allianceAndName: string): string {
+  return allianceAndName.replace(ALLIANCE_TAG_PATTERN, '').trim();
+}
+
 /** A days-of-speedups field beyond this is almost certainly a typo (e.g. hours or minutes typed
  *  into the days field) rather than a real value — see the "max" mat-error on each days input. */
 export const MAX_SPEEDUP_DAYS = 1000;

@@ -22,9 +22,12 @@
   } @else {
     <div class="subtitle-row">
       <p class="subtitle">
-        Battle: {{ form()!.battleDate }} · {{ items().length }} submission{{
-          items().length === 1 ? '' : 's'
+        Battle: {{ form()!.battleDate }} · {{ knownItems().length }} submission{{
+          knownItems().length === 1 ? '' : 's'
         }}
+        @if (pendingItems().length) {
+          · {{ pendingItems().length }} pending approval
+        }
       </p>
       <div class="subtitle-actions">
         <div class="view-toggle" role="group" aria-label="Table detail level">
@@ -61,7 +64,73 @@
       </div>
     </div>
 
-    @if (!items().length) {
+    @if (pendingItems().length) {
+      <mat-card class="pending-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>person_search</mat-icon>
+            Unknown players — pending approval ({{ pendingItems().length }})
+          </mat-card-title>
+          <mat-card-subtitle>
+            These Player IDs weren't found in the known player list when they submitted. Their
+            answers are saved, but they're excluded from appointments until approved.
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Stated alliance &amp; name</th>
+                  <th>Player ID</th>
+                  <th>Submitted</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of pendingItems(); track s.playerId) {
+                  <tr>
+                    <td>{{ s.allianceAndName }}</td>
+                    <td>{{ s.playerId }}</td>
+                    <td>{{ s.updatedAt | date: 'short' }}</td>
+                    <td class="row-actions">
+                      <button
+                        mat-stroked-button
+                        color="primary"
+                        [disabled]="approvingPlayerId() === s.playerId"
+                        (click)="approve(s)"
+                      >
+                        @if (approvingPlayerId() === s.playerId) {
+                          <mat-progress-spinner diameter="18" mode="indeterminate" />
+                        } @else {
+                          <mat-icon>person_add</mat-icon>
+                        }
+                        Approve
+                      </button>
+                      <button
+                        mat-icon-button
+                        [disabled]="deletingPlayerId() === s.playerId"
+                        (click)="delete(s)"
+                        aria-label="Delete this submission"
+                        matTooltip="Delete"
+                      >
+                        @if (deletingPlayerId() === s.playerId) {
+                          <mat-progress-spinner diameter="18" mode="indeterminate" />
+                        } @else {
+                          <mat-icon>delete</mat-icon>
+                        }
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    @if (!knownItems().length) {
       <mat-card>
         <mat-card-content>No submissions yet.</mat-card-content>
       </mat-card>

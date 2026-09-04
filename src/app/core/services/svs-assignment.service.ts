@@ -46,9 +46,11 @@ export class SvsAssignmentService {
     );
   }
 
-  /** Re-runs the assignment algorithm over every current submission for this form and saves it. */
+  /** Re-runs the assignment algorithm over every current, approved submission for this form and
+   *  saves it — submissions still awaiting admin approval (see SvsSubmission.pendingApproval) are
+   *  excluded entirely, same as if they hadn't submitted at all, until an admin approves them. */
   async recompute(formId: string): Promise<void> {
-    const submissions = await this.submissions.getAllForForm(formId);
+    const submissions = await this.eligibleSubmissions(formId);
     const assignment = computeAssignment(formId, submissions);
     await setDoc(doc(this.firestore, COLLECTION, formId), assignment);
   }
@@ -58,9 +60,11 @@ export class SvsAssignmentService {
    * after they submit, to show "here's where you stand right now". If persisting the shared doc
    * fails (e.g. the same rules gap `watch` above guards against), the computed status is still
    * returned — it doesn't depend on the write having succeeded, only on having read submissions.
+   * Never called for a pending-approval submission — see survey.ts's submit(), which shows a
+   * different notice for those instead — but filters the same as recompute() regardless.
    */
   async recomputeAndGetStatus(formId: string, playerId: string): Promise<PlayerDayStatus[]> {
-    const submissions = await this.submissions.getAllForForm(formId);
+    const submissions = await this.eligibleSubmissions(formId);
     const assignment = computeAssignment(formId, submissions);
     try {
       await setDoc(doc(this.firestore, COLLECTION, formId), assignment);
@@ -71,5 +75,12 @@ export class SvsAssignmentService {
       );
     }
     return playerStatus(submissions, assignment, playerId);
+  }
+
+  /** Every submission for this form that's actually eligible for an appointment — excludes
+   *  anything still awaiting admin approval (see SvsSubmission.pendingApproval). */
+  private async eligibleSubmissions(formId: string) {
+    const submissions = await this.submissions.getAllForForm(formId);
+    return submissions.filter((s) => !s.pendingApproval);
   }
 }

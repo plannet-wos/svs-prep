@@ -33,6 +33,18 @@ export interface SvsForm {
   /** Epoch ms. Submissions are only accepted while now is within [submissionsOpenAt, submissionsCloseAt]. */
   submissionsOpenAt: number;
   submissionsCloseAt: number;
+  /**
+   * Default off. When on, the public survey (survey.ts's submit()) checks the submitting player ID
+   * against the shared `players` collection (see core/models/player.model.ts / PlayerService) before
+   * letting the submission count toward appointments. A player not found there still gets their
+   * answers saved — with SvsSubmission.pendingApproval set — but is shown an "you'll need to be
+   * manually approved" notice instead of the usual appointment-status popup, and
+   * SvsAssignmentService excludes pending submissions from the assignment algorithm entirely until
+   * an admin approves them from the submissions page's "unknown players" section (see
+   * features/admin/form-submissions and its approve-player-dialog), which creates the missing
+   * `players/{playerId}` record and clears pendingApproval.
+   */
+  requireKnownPlayer?: boolean;
   createdAt: number;
   updatedAt: number;
 }

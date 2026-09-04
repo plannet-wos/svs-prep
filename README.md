@@ -42,6 +42,19 @@ slot** per buff day: set one and that player always keeps that exact slot, unbum
 regardless of speedup-days, and it doesn't even need to be one of their own selected times — see
 `core/algorithms/assignment.ts`'s pinning logic. Pinned submissions show a 📌 badge in the table.
 
+**Known players only:** each SvS prep form has an off-by-default "Only known players can submit"
+setting (form editor's Access card). When on, a submitted Player ID is checked against the shared
+`players` collection (owned by foundry-planner, same `tal-coordinator` Firestore project — see
+`core/models/player.model.ts`). An unrecognized player's answers are still saved (with
+`SvsSubmission.pendingApproval` set) and they're shown a "you'll need to be manually approved"
+notice instead of the usual appointment-status popup; `SvsAssignmentService` excludes any pending
+submission from the assignment algorithm entirely. The submissions page gets an "Unknown players —
+pending approval" section listing them, where an admin can either delete the submission or approve
+it — a small dialog collects the player's name (prefilled from what they typed) and alliance (a
+dropdown over the state's real alliances, from the shared `alliances` collection), creates their
+`players/{id}` record, clears `pendingApproval`, and recomputes appointments so the submission now
+has a shot at one.
+
 **Admin login:** superadmin-only, reusing the shared `accounts` collection / client-side
 password-hash-verifying-write scheme from foundry-planner and alliance-wiki (see
 `core/services/auth.service.ts` and `core/utils/password.util.ts`) — an existing superadmin account

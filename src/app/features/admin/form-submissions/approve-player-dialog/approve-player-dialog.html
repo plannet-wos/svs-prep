@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>Approve player {{ data.playerId }}</h2>
+
+<mat-dialog-content>
+  <p class="intro">
+    Adds this player to the shared player list. Their SvS submission will then count toward
+    appointments once recalculated.
+  </p>
+  <form [formGroup]="form" class="approve-form">
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" />
+      @if (form.controls.name.hasError('required') && form.controls.name.touched) {
+        <mat-error>Required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Alliance</mat-label>
+      <mat-select formControlName="allianceId">
+        @for (a of allianceOptions(); track a.id) {
+          <mat-option [value]="a.id">{{ a.name }}</mat-option>
+        }
+      </mat-select>
+      @if (loadingAlliances()) {
+        <mat-hint>Loading alliances…</mat-hint>
+      } @else if (!allianceOptions().length) {
+        <mat-hint>No alliances found for this state.</mat-hint>
+      }
+      @if (form.controls.allianceId.hasError('required') && form.controls.allianceId.touched) {
+        <mat-error>Required</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-stroked-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" [disabled]="loadingAlliances()" (click)="confirm()">
+    Approve
+  </button>
+</mat-dialog-actions>

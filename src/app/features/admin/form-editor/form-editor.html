@@ -119,6 +119,22 @@
         </mat-card-content>
       </mat-card>
 
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Access</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-checkbox formControlName="requireKnownPlayer">
+            Only known players can submit
+          </mat-checkbox>
+          <p class="field-hint">
+            When on, a submitted Player ID is checked against the shared player list. An unknown
+            player's answers are still saved, but they're excluded from appointments until an
+            admin approves them from the submissions page.
+          </p>
+        </mat-card-content>
+      </mat-card>
+
       <div class="submit-row">
         <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
         <button mat-flat-button color="primary" type="submit" [disabled]="saving()">

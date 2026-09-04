@@ -3,6 +3,7 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -42,6 +43,7 @@ function combine(date: Date | null, time: Date | null): number | null {
     ReactiveFormsModule,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatDatepickerModule,
     MatFormFieldModule,
     MatIconModule,
@@ -81,6 +83,7 @@ export class SvsFormEditorComponent {
     submissionsOpenTime: this.fb.control<Date | null>(null, Validators.required),
     submissionsCloseDate: this.fb.control<Date | null>(null, Validators.required),
     submissionsCloseTime: this.fb.control<Date | null>(null, Validators.required),
+    requireKnownPlayer: this.fb.control<boolean>(false),
   });
 
   constructor() {
@@ -104,6 +107,7 @@ export class SvsFormEditorComponent {
             submissionsOpenTime: new Date(existing.submissionsOpenAt),
             submissionsCloseDate: new Date(existing.submissionsCloseAt),
             submissionsCloseTime: new Date(existing.submissionsCloseAt),
+            requireKnownPlayer: existing.requireKnownPlayer ?? false,
           });
         } else {
           this.snackBar.open("Couldn't find that form.", 'OK', { duration: 5000 });
@@ -148,6 +152,7 @@ export class SvsFormEditorComponent {
       trainingDay: v.trainingDay,
       submissionsOpenAt: combine(v.submissionsOpenDate, v.submissionsOpenTime)!,
       submissionsCloseAt: combine(v.submissionsCloseDate, v.submissionsCloseTime)!,
+      requireKnownPlayer: v.requireKnownPlayer,
     };
 
     this.saving.set(true);

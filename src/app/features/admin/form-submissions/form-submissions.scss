@@ -149,8 +149,11 @@ tbody tr:hover {
 
 .row-actions {
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 
-  button {
+  button[mat-icon-button] {
     width: 32px;
     height: 32px;
     line-height: 32px;
@@ -160,5 +163,26 @@ tbody tr:hover {
     font-size: 18px;
     width: 18px;
     height: 18px;
+  }
+
+  button[mat-stroked-button] mat-icon,
+  button[mat-stroked-button] mat-progress-spinner {
+    margin-right: 4px;
+    vertical-align: text-bottom;
+  }
+}
+
+.pending-card {
+  margin-bottom: 16px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-error) 40%, var(--mat-sys-outline-variant));
+
+  mat-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .table-wrap {
+    border: none;
   }
 }

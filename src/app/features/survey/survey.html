@@ -66,6 +66,17 @@
           </mat-form-field>
         </mat-card-content>
 
+        @if (activeForm.requireKnownPlayer) {
+          <mat-card-content class="existing-banner">
+            <mat-icon>shield</mat-icon>
+            <span
+              >This round only gives appointments to known players. If we don't recognize your
+              Player ID, your answers are still saved, but you'll need to be approved by an admin
+              first.</span
+            >
+          </mat-card-content>
+        }
+
         @if (existingSubmission(); as existing) {
           <mat-card-content class="existing-banner">
             <mat-icon>info</mat-icon>

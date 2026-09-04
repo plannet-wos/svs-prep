@@ -27,6 +27,7 @@ import { SvsSubmission } from '../../core/models/svs-submission.model';
 import { SvsAssignmentService } from '../../core/services/svs-assignment.service';
 import { SvsFormService } from '../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../core/services/svs-submission.service';
+import { PlayerService } from '../../core/services/player.service';
 import {
   ALLIANCE_TAG_PATTERN,
   MAX_SPEEDUP_DAYS,
@@ -41,6 +42,7 @@ import {
 } from './assignment-status-dialog/assignment-status-dialog';
 import { DayAvailabilityPickerComponent } from './day-availability-picker/day-availability-picker';
 import { DiffDialogComponent } from './diff-dialog/diff-dialog';
+import { UnknownPlayerDialogComponent } from './unknown-player-dialog/unknown-player-dialog';
 
 /** 'YYYY-MM-DD' -> "Saturday 5 September 2026". */
 function formatBattleDate(isoDate: string): string {
@@ -79,6 +81,7 @@ export class SurveyComponent {
   private readonly svsForms = inject(SvsFormService);
   private readonly submissions = inject(SvsSubmissionService);
   private readonly assignments = inject(SvsAssignmentService);
+  private readonly players = inject(PlayerService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -363,7 +366,30 @@ export class SurveyComponent {
         }
       }
 
-      await this.submissions.save(form.id, answers.playerId, answers, !existing);
+      // "Known players only" gate — see SvsForm.requireKnownPlayer's doc comment. Re-checked on
+      // every submit (not just once) so a player who's since been approved, or resubmits after a
+      // typo'd Player ID, gets the right outcome each time.
+      const pendingApproval = form.requireKnownPlayer
+        ? !(await this.players.exists(answers.playerId))
+        : false;
+
+      await this.submissions.save(form.id, answers.playerId, { ...answers, pendingApproval }, !existing);
+
+      if (pendingApproval) {
+        this.snackBar.open('Your answers were saved.', 'OK', { duration: 4000 });
+        // No appointment-status popup — an unapproved submission never enters the assignment
+        // algorithm (see SvsAssignmentService.recompute), so there's nothing to show yet.
+        await firstValueFrom(
+          this.dialog
+            .open(UnknownPlayerDialogComponent, {
+              data: { allianceAndName: answers.allianceAndName },
+              width: '480px',
+            })
+            .afterClosed(),
+        );
+        return;
+      }
+
       this.snackBar.open('Thanks! Your answers were saved.', 'OK', { duration: 5000 });
 
       // Best-effort: the submission is already safely saved above, so a failure here shouldn't
