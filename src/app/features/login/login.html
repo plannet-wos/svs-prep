@@ -6,7 +6,20 @@
       <mat-card-subtitle>SvS Preparation</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
-      @if (!pendingMfaResolver()) {
+      @if (showForgotPassword) {
+        @if (!resetSent) {
+          <p class="mfa-hint">Enter your email and we'll send you a link to reset your password.</p>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput [(ngModel)]="resetEmail" (keyup.enter)="sendPasswordReset()" autocomplete="username" />
+          </mat-form-field>
+          @if (error) {
+            <p class="error">Something went wrong — try again in a moment.</p>
+          }
+        } @else {
+          <p class="mfa-hint">If an account exists for {{ resetEmail }}, a reset link is on its way — check your inbox (and spam folder).</p>
+        }
+      } @else if (!pendingMfaResolver()) {
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Email</mat-label>
           <input matInput [(ngModel)]="email" (keyup.enter)="submit()" autofocus autocomplete="username" />
@@ -24,6 +37,7 @@
         @if (error) {
           <p class="error">Invalid email or password.</p>
         }
+        <button mat-button class="forgot-link" (click)="openForgotPassword()">Forgot password?</button>
       } @else {
         <p class="mfa-hint">Enter the 6-digit code from your authenticator app.</p>
         <mat-form-field appearance="outline" class="full-width">
@@ -36,7 +50,18 @@
       }
     </mat-card-content>
     <mat-card-actions>
-      @if (!pendingMfaResolver()) {
+      @if (showForgotPassword) {
+        @if (!resetSent) {
+          <button mat-flat-button color="primary" (click)="sendPasswordReset()" [disabled]="loading || !resetEmail">
+            @if (loading) {
+              <mat-spinner diameter="20" />
+            } @else {
+              Send reset link
+            }
+          </button>
+        }
+        <button mat-button (click)="cancelForgotPassword()">{{ resetSent ? 'Back to login' : 'Back' }}</button>
+      } @else if (!pendingMfaResolver()) {
         <button mat-flat-button color="primary" (click)="submit()" [disabled]="loading || !email || !password">
           @if (loading) {
             <mat-spinner diameter="20" />

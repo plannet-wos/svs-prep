@@ -86,4 +86,40 @@ export class LoginComponent {
     this.otp = '';
     this.error = false;
   }
+
+  // --- forgot password ---
+  showForgotPassword = false;
+  resetEmail = '';
+  resetSent = false;
+
+  openForgotPassword(): void {
+    this.resetEmail = this.email;
+    this.resetSent = false;
+    this.error = false;
+    this.showForgotPassword = true;
+  }
+
+  cancelForgotPassword(): void {
+    this.showForgotPassword = false;
+    this.resetSent = false;
+  }
+
+  async sendPasswordReset(): Promise<void> {
+    if (!this.resetEmail) return;
+    this.loading = true;
+    this.error = false;
+    try {
+      await this.auth.sendPasswordReset(this.resetEmail);
+    } catch (err) {
+      if ((err as { code?: string }).code !== 'auth/user-not-found') {
+        this.error = true;
+        this.loading = false;
+        this.cdr.detectChanges();
+        return;
+      }
+    }
+    this.resetSent = true;
+    this.loading = false;
+    this.cdr.detectChanges();
+  }
 }
