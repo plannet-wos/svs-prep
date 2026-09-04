@@ -1,8 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { firstValueFrom } from 'rxjs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -12,6 +14,12 @@ import { SvsSubmission } from '../../../core/models/svs-submission.model';
 import { SvsAssignmentService } from '../../../core/services/svs-assignment.service';
 import { SvsFormService } from '../../../core/services/svs-form.service';
 import { SvsSubmissionService } from '../../../core/services/svs-submission.service';
+import { PlayerService } from '../../../core/services/player.service';
+import { stripAllianceTag } from '../../../core/validators/svs-submission.validators';
+import {
+  ApprovePlayerDialogComponent,
+  ApprovePlayerDialogResult,
+} from './approve-player-dialog/approve-player-dialog';
 
 const MINUTES_PER_SLOT = 30;
 
@@ -87,6 +95,8 @@ export class SvsFormSubmissionsComponent {
   private readonly forms = inject(SvsFormService);
   private readonly submissions = inject(SvsSubmissionService);
   private readonly assignments = inject(SvsAssignmentService);
+  private readonly players = inject(PlayerService);
+  private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
   readonly stateId = this.route.snapshot.paramMap.get('stateId')!;
@@ -94,18 +104,27 @@ export class SvsFormSubmissionsComponent {
   readonly loadError = signal(false);
   readonly recomputing = signal(false);
   readonly deletingPlayerId = signal<string | null>(null);
+  readonly approvingPlayerId = signal<string | null>(null);
   readonly form = signal<SvsFormWithId | null>(null);
   readonly items = signal<SvsSubmission[]>([]);
   readonly formatSlotRanges = formatSlotRanges;
+  readonly stripAllianceTag = stripAllianceTag;
 
   readonly viewMode = signal<'simple' | 'full'>('full');
   readonly sortColumn = signal<SortColumn>('allianceAndName');
   readonly sortDirection = signal<'asc' | 'desc'>('asc');
 
+  /** Submissions still awaiting admin approval (see SvsForm.requireKnownPlayer) — shown in their
+   *  own section below the main table instead of mixed into it, since they don't count toward
+   *  appointments yet. */
+  readonly pendingItems = computed(() => this.items().filter((s) => s.pendingApproval));
+  /** Everything else — what the sortable main table shows. */
+  readonly knownItems = computed(() => this.items().filter((s) => !s.pendingApproval));
+
   readonly sortedItems = computed(() => {
     const column = this.sortColumn();
     const direction = this.sortDirection() === 'asc' ? 1 : -1;
-    return [...this.items()].sort((a, b) => {
+    return [...this.knownItems()].sort((a, b) => {
       const av = a[column];
       const bv = b[column];
       if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * direction;
@@ -164,6 +183,53 @@ export class SvsFormSubmissionsComponent {
       });
     } finally {
       this.recomputing.set(false);
+    }
+  }
+
+  /**
+   * Opens the approve dialog for an unknown-player submission — on confirm, creates their
+   * `players/{id}` record (see PlayerService.approve), clears pendingApproval on their submission,
+   * and recomputes appointments so it now has a chance to count.
+   */
+  async approve(submission: SvsSubmission): Promise<void> {
+    const form = this.form();
+    if (!form) return;
+
+    const result = await firstValueFrom(
+      this.dialog
+        .open<ApprovePlayerDialogComponent, unknown, ApprovePlayerDialogResult>(
+          ApprovePlayerDialogComponent,
+          {
+            data: {
+              playerId: submission.playerId,
+              defaultName: stripAllianceTag(submission.allianceAndName),
+              stateId: this.stateId,
+            },
+            width: '440px',
+          },
+        )
+        .afterClosed(),
+    );
+    if (!result) return;
+
+    this.approvingPlayerId.set(submission.playerId);
+    try {
+      await this.players.approve(submission.playerId, result.name, result.allianceId);
+      await this.submissions.clearPendingApproval(form.id, submission.playerId);
+      this.items.update((items) =>
+        items.map((s) =>
+          s.playerId === submission.playerId ? { ...s, pendingApproval: false } : s,
+        ),
+      );
+      await this.assignments.recompute(form.id);
+      this.snackBar.open('Player approved — appointments recalculated.', 'OK', { duration: 5000 });
+    } catch (err) {
+      console.error(err);
+      this.snackBar.open('Something went wrong approving this player — please try again.', 'OK', {
+        duration: 6000,
+      });
+    } finally {
+      this.approvingPlayerId.set(null);
     }
   }
 

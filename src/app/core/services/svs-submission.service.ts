@@ -62,4 +62,15 @@ export class SvsSubmissionService {
   async delete(formId: string, playerId: string): Promise<void> {
     await deleteDoc(doc(this.firestore, COLLECTION, docId(formId, playerId)));
   }
+
+  /** Admin-only: clears the pendingApproval flag once the player's been approved (see
+   *  PlayerService.approve and features/admin/form-submissions's approve flow) — their submission
+   *  now counts toward the appointment algorithm on the next recompute. */
+  async clearPendingApproval(formId: string, playerId: string): Promise<void> {
+    await setDoc(
+      doc(this.firestore, COLLECTION, docId(formId, playerId)),
+      { pendingApproval: false },
+      { merge: true },
+    );
+  }
 }

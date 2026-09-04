@@ -60,6 +60,17 @@ export interface SvsSubmission {
   pinnedSlotResearch?: string | null;
   pinnedSlotTraining?: string | null;
 
+  /**
+   * Set true when this submission was saved under a round with SvsForm.requireKnownPlayer on and
+   * this playerId wasn't found in the shared `players` collection at submit time (see
+   * PlayerService.exists and survey.ts's submit()). SvsAssignmentService excludes any submission
+   * with this set from the appointment algorithm entirely. Cleared (or absent) once an admin
+   * approves the player from form-submissions's "unknown players" section — see
+   * SvsSubmissionService.clearPendingApproval. Absent/false for every submission from a round
+   * that never had requireKnownPlayer on.
+   */
+  pendingApproval?: boolean;
+
   createdAt: number;
   updatedAt: number;
 }
@@ -76,6 +87,7 @@ export const SVS_SUBMISSION_FIELD_LABELS: Record<
     | 'pinnedSlotConstruction'
     | 'pinnedSlotResearch'
     | 'pinnedSlotTraining'
+    | 'pendingApproval'
   >,
   string
 > = {
