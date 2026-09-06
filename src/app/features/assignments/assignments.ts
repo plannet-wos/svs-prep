@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { SLOT_GROUPS } from '../../core/config/slot-grid';
 import {
   AssignmentEntry,
@@ -47,6 +48,7 @@ export class SvsAssignmentsComponent implements OnDestroy {
   private readonly forms = inject(SvsFormService);
   private readonly submissions = inject(SvsSubmissionService);
   private readonly assignmentsService = inject(SvsAssignmentService);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly slotGroups = SLOT_GROUPS;
 
@@ -154,5 +156,38 @@ export class SvsAssignmentsComponent implements OnDestroy {
       playerId,
       allianceAndName: names.get(playerId) ?? playerId,
     }));
+  }
+
+  /** Lets whoever's running the roster (e.g. the alliance president) click any player here and
+   *  paste their ID straight into the game's search, instead of retyping or alt-tabbing to look
+   *  it up. Copies the raw playerId only — that's what the game's search actually takes. */
+  async copyPlayerId(playerId: string, allianceAndName: string): Promise<void> {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(playerId);
+      } else {
+        this.legacyCopy(playerId);
+      }
+      this.snackBar.open(`Copied ${allianceAndName}'s ID — ${playerId}`, 'OK', { duration: 2500 });
+    } catch (err) {
+      console.error('Clipboard copy failed', err);
+      this.snackBar.open(`Couldn't copy automatically — their ID is ${playerId}`, 'OK', {
+        duration: 6000,
+      });
+    }
+  }
+
+  /** Fallback for contexts without the async Clipboard API (e.g. a non-HTTPS origin) — the
+   *  classic hidden-textarea-plus-execCommand trick. */
+  private legacyCopy(text: string): void {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
   }
 }

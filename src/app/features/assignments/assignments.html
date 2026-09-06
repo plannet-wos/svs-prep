@@ -71,7 +71,17 @@
                   <div class="slot-row">
                     @for (slot of group.slots; track slot) {
                       @let entry = entryFor(section.day, slot);
-                      <div class="slot-cell" [class.filled]="entry" [class.me]="isMe(entry)">
+                      <button
+                        type="button"
+                        class="slot-cell"
+                        [class.filled]="entry"
+                        [class.me]="isMe(entry)"
+                        [disabled]="!entry"
+                        [attr.title]="
+                          entry ? 'Click to copy ' + entry.allianceAndName + '’s player ID' : null
+                        "
+                        (click)="entry && copyPlayerId(entry.playerId, entry.allianceAndName)"
+                      >
                         <span class="slot-time">{{ slot }}</span>
                         @if (entry) {
                           <span class="slot-holder">{{ entry.allianceAndName }}</span>
@@ -79,7 +89,7 @@
                         } @else {
                           <span class="slot-empty">open</span>
                         }
-                      </div>
+                      </button>
                     }
                   </div>
                 </div>
@@ -93,7 +103,14 @@
                   <span>
                     Not yet scheduled ({{ pending.length }}):
                     @for (p of pending; track p.playerId; let last = $last) {
-                      {{ p.allianceAndName }}{{ last ? '' : ', ' }}
+                      <button
+                        type="button"
+                        class="unassigned-name"
+                        title="Click to copy player ID"
+                        (click)="copyPlayerId(p.playerId, p.allianceAndName)"
+                      >
+                        {{ p.allianceAndName }}</button
+                      >{{ last ? '' : ', ' }}
                     }
                   </span>
                 </div>
