@@ -15,18 +15,33 @@ import { SvsSubmission } from '../models/svs-submission.model';
  * of their own selected 30-min slots (core/config/slot-grid.ts's 48-slot grid), giving priority to
  * whoever put in the most speedup-days for that buff.
  *
- * This is exactly the classic hospital/school-choice matching problem — unit-capacity slots,
- * priority-ordered applicants who are otherwise indifferent among their acceptable options — so
- * it's solved with player-proposing Gale-Shapley deferred acceptance: a player proposes to one of
- * their still-untried selected slots; a slot always keeps its highest-priority proposer, bumping
- * anyone lower back out to try their next selected slot. This guarantees, structurally:
- *  - nobody is ever assigned a slot outside their own selection (a player only ever proposes to
- *    slots they picked),
- *  - a slot only ever changes hands to strictly higher priority (never the reverse),
- *  - and — by the "Rural Hospitals" theorem for this class of matching problems — the number of
- *    slots filled is the maximum achievable without breaking that priority rule: every stable
- *    matching here seats the same set size, so there's no reshuffle that seats more people without
- *    bumping someone in favor of a lower-priority player.
+ * This is a maximum bipartite matching problem (applicants <-> slots, each applicant only willing
+ * to take one of their own selected slots), with a priority order over applicants layered on top —
+ * so the goal isn't merely "nobody's directly outranked at the slot they hold" (a naive
+ * proposal-based algorithm gives you that much and stops there, which can leave slots empty that
+ * didn't need to be — see below), it's "seat as many people as the selections structurally allow,
+ * and never leave someone unseated while a strictly-lower-priority applicant sits in any slot they
+ * selected." Solved with Kuhn's algorithm: applicants are inserted one at a time, highest
+ * speedup-days first; each insertion runs a DFS augmenting-path search over their own selected
+ * slots — an empty one seats them directly, an occupied one is usable only if its current holder
+ * (necessarily equal-or-higher priority, since they were inserted earlier) can itself be relocated
+ * to *another* of their own selected slots. That relocation can cascade through several
+ * already-seated applicants, but never removes anyone from the matching outright — it only ever
+ * moves someone to a different slot they also selected, in exchange for freeing up room for the
+ * new applicant. Concretely: two slots A and B, a 10-speedup-day player who selected both (prefers
+ * A) and a 1-speedup-day player who selected only A — the 1-day player can and should still get A,
+ * by moving the 10-day player to B, rather than leaving B empty and the 1-day player unseated for
+ * no reason. This guarantees, structurally:
+ *  - nobody is ever assigned a slot outside their own selection (every relocation lands on the
+ *    relocated applicant's own selected list, never anyone else's),
+ *  - inserting applicants highest-priority-first means an applicant only ever fails to get seated
+ *    if, at that point, every slot they selected is unreachable through any chain of relocation —
+ *    which, since nothing lower-priority has been inserted yet, can only happen when every one of
+ *    those slots is genuinely held (directly or transitively) by someone of equal-or-higher
+ *    priority, never by someone weaker,
+ *  - and the result is a *maximum* matching (Kuhn's algorithm ends with no augmenting path left for
+ *    anyone) — the largest number of slots the selections can possibly support filling, not merely
+ *    a locally-stable one that stops the moment nobody's directly outranked.
  *
  * Run fresh on every submission (see SvsAssignmentService.recompute) rather than maintained
  * incrementally — with realistic roster sizes this is microseconds, and it sidesteps any chance of
@@ -35,11 +50,11 @@ import { SvsSubmission } from '../models/svs-submission.model';
  *
  * An admin can override all of this for one player/day at a time (see
  * features/admin/submission-editor and SvsSubmission.pinnedSlot*): a pinned slot is seated before
- * the algorithm runs and is never contestable — no priority, however high, can bump it, and it
- * doesn't even need to be one of that player's own selected slots. Two submissions pinned to the
- * same slot on the same day shouldn't happen (the admin editor prevents it), but if it ever does,
- * whichever is processed first keeps the slot and the other falls back to normal matching over
- * their own selected availability.
+ * the algorithm runs and is permanently walled off from it — no relocation search, however deep,
+ * can reach into or displace a pinned slot, and a pinned holder never enters the matching graph at
+ * all. Two submissions pinned to the same slot on the same day shouldn't happen (the admin editor
+ * prevents it), but if it ever does, whichever is processed first (by playerId) keeps the slot and
+ * the other falls back to normal matching over their own selected availability.
  */
 
 /**
@@ -58,10 +73,8 @@ function comparePriority(a: SvsSubmission, b: SvsSubmission, day: BuffDay): numb
 
 interface Applicant {
   submission: SvsSubmission;
-  /** This applicant's selected slots, in ALL_SLOTS order — proposal order, earliest slot first. */
+  /** This applicant's selected slots, in ALL_SLOTS order — the order tryAssign tries them in. */
   acceptable: string[];
-  /** Index into `acceptable` of the next slot this applicant hasn't yet tried. */
-  nextProposal: number;
 }
 
 export interface DayAssignmentResult {
@@ -69,7 +82,7 @@ export interface DayAssignmentResult {
   unassignedPlayerIds: string[];
 }
 
-/** Deferred acceptance for a single buff day. Pure function — no Firestore, easy to unit test. */
+/** Maximum-matching assignment for a single buff day. Pure function — no Firestore, easy to unit test. */
 export function computeDayAssignment(
   submissions: SvsSubmission[],
   day: BuffDay,
@@ -78,51 +91,71 @@ export function computeDayAssignment(
   const pinnedField = PINNED_SLOT_FIELD[day];
   const slotOrder = new Map(ALL_SLOTS.map((slot, i) => [slot, i]));
 
-  // Sorted by playerId so the algorithm's input order is deterministic regardless of the order
-  // Firestore happened to return submissions in.
-  const applicants: Applicant[] = [...submissions]
+  const toApplicant = (submission: SvsSubmission): Applicant => ({
+    submission,
+    acceptable: [...(submission[availabilityField] as string[])].sort(
+      (a, b) => (slotOrder.get(a) ?? 0) - (slotOrder.get(b) ?? 0),
+    ),
+  });
+
+  // Sorted by playerId so pin-collision resolution ("first-processed pin wins", see this file's
+  // doc comment) is deterministic regardless of the order Firestore happened to return
+  // submissions in — independent of the priority-driven insertion order used for the actual
+  // matching below.
+  const byPlayerId = [...submissions]
     .sort((a, b) => a.playerId.localeCompare(b.playerId))
-    .map((submission) => ({
-      submission,
-      acceptable: [...(submission[availabilityField] as string[])].sort(
-        (a, b) => (slotOrder.get(a) ?? 0) - (slotOrder.get(b) ?? 0),
-      ),
-      nextProposal: 0,
-    }));
+    .map(toApplicant);
 
   const holder = new Map<string, Applicant>();
 
-  // Pinned slots are seated first, outside the normal contest — see this file's doc comment.
+  // Pinned slots are seated first, outside the normal contest, and permanently excluded from the
+  // relocation search below — see this file's doc comment.
+  const pinnedSlots = new Set<string>();
   const pinnedPlayerIds = new Set<string>();
-  for (const applicant of applicants) {
+  for (const applicant of byPlayerId) {
     const pinnedSlot = applicant.submission[pinnedField] as string | null | undefined;
     if (!pinnedSlot || holder.has(pinnedSlot)) continue; // no pin, or already claimed by an earlier pin
     holder.set(pinnedSlot, applicant);
+    pinnedSlots.add(pinnedSlot);
     pinnedPlayerIds.add(applicant.submission.playerId);
   }
 
-  const free: Applicant[] = applicants.filter(
-    (a) => !pinnedPlayerIds.has(a.submission.playerId) && a.acceptable.length > 0,
+  /**
+   * Kuhn's algorithm's DFS augmenting-path search for one applicant: try every one of their own
+   * selected slots in order — an empty one seats them immediately; an occupied one only works if
+   * its current holder can be moved to a *different* one of their own selected slots (recursing,
+   * with the same `visited` set guarding against cycles within this one search). Never touches a
+   * pinned slot, never lands anyone outside their own `acceptable` list.
+   */
+  function tryAssign(applicant: Applicant, visited: Set<string>): boolean {
+    for (const slot of applicant.acceptable) {
+      if (visited.has(slot) || pinnedSlots.has(slot)) continue;
+      visited.add(slot);
+      const current = holder.get(slot);
+      if (!current || tryAssign(current, visited)) {
+        holder.set(slot, applicant);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Highest speedup-days first — see this file's doc comment for why inserting in this order is
+  // what guarantees a higher-priority applicant is never left unseated while a strictly-lower-
+  // priority one holds a slot they selected.
+  const byPriority = [...byPlayerId].sort((a, b) =>
+    comparePriority(a.submission, b.submission, day),
   );
 
-  while (free.length > 0) {
-    const applicant = free.shift()!;
-    if (applicant.nextProposal >= applicant.acceptable.length) continue; // exhausted their whole selection
-
-    const slot = applicant.acceptable[applicant.nextProposal];
-    applicant.nextProposal++;
-
-    const current = holder.get(slot);
-    if (!current) {
-      holder.set(slot, applicant);
-    } else if (pinnedPlayerIds.has(current.submission.playerId)) {
-      free.push(applicant); // pinned — never contestable, try the next selected slot
-    } else if (comparePriority(applicant.submission, current.submission, day) < 0) {
-      holder.set(slot, applicant);
-      free.push(current); // bumped — try their next selected slot
-    } else {
-      free.push(applicant); // rejected — try its next selected slot
-    }
+  // Only counts as having "entered the contest" if they selected at least one slot — someone who
+  // selected none (FC8-maxed on Construction, or anyone who opted out of this day entirely, see
+  // survey.ts) never had a shot at a slot in the first place, so listing them as unassigned (or
+  // running a pointless search for them) would be misleading.
+  const unassignedPlayerIds: string[] = [];
+  for (const applicant of byPriority) {
+    if (pinnedPlayerIds.has(applicant.submission.playerId)) continue; // already seated above
+    if (applicant.acceptable.length === 0) continue;
+    if (!tryAssign(applicant, new Set())) unassignedPlayerIds.push(applicant.submission.playerId);
   }
 
   const slots: Record<string, AssignmentEntry> = {};
@@ -133,15 +166,6 @@ export function computeDayAssignment(
       days: applicant.submission[DAYS_FIELD[day]] as number,
     };
   }
-
-  // Only counts as "unassigned" if they actually entered the contest for this day (selected at
-  // least one slot) and still didn't get seated — someone who selected none (FC8-maxed on
-  // Construction, or anyone who opted out of this day entirely, see survey.ts) never had a shot
-  // at a slot in the first place, so listing them as "not yet scheduled" would be misleading.
-  const seated = new Set(holder.values());
-  const unassignedPlayerIds = applicants
-    .filter((a) => !seated.has(a) && a.acceptable.length > 0)
-    .map((a) => a.submission.playerId);
 
   return { slots, unassignedPlayerIds };
 }

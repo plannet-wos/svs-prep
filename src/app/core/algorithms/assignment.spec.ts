@@ -75,6 +75,54 @@ describe('computeDayAssignment', () => {
     expect(unassignedPlayerIds).toEqual([]);
   });
 
+  it('relocates a higher-priority player to their other selected slot so a lower-priority player with no alternative can still be seated', () => {
+    // strong selected both slots (prefers 09:00); weak selected only 09:00. A naive "only bump if
+    // I directly outrank the incumbent" algorithm would let strong lock in 09:00 immediately, then
+    // reject weak outright — leaving 09:30 empty and weak unseated for no reason. The algorithm
+    // must instead notice strong can happily move to 09:30, freeing 09:00 for weak: maximizing how
+    // many slots get filled takes priority over any one player's exact preferred pick.
+    const subs = [
+      submission({
+        playerId: 'strong',
+        availableTimesConstruction: ['09:00', '09:30'],
+        daysConstruction: 10,
+      }),
+      submission({ playerId: 'weak', availableTimesConstruction: ['09:00'], daysConstruction: 1 }),
+    ];
+    const { slots, unassignedPlayerIds } = computeDayAssignment(subs, 'construction');
+    expect(slots['09:00'].playerId).toBe('weak');
+    expect(slots['09:30'].playerId).toBe('strong');
+    expect(unassignedPlayerIds).toEqual([]);
+  });
+
+  it('cascades a relocation through more than one already-seated player to seat a newcomer with no alternative', () => {
+    // A chain: newcomer only wants 09:00. 09:00 is held by mid (also selected 09:30). 09:30 is
+    // held by high (also selected 10:00, otherwise empty). Seating newcomer requires bumping mid
+    // to 09:30, which in turn requires bumping high to 10:00 — a two-hop cascade, not just one.
+    const subs = [
+      submission({
+        playerId: 'high',
+        availableTimesConstruction: ['09:30', '10:00'],
+        daysConstruction: 20,
+      }),
+      submission({
+        playerId: 'mid',
+        availableTimesConstruction: ['09:00', '09:30'],
+        daysConstruction: 10,
+      }),
+      submission({
+        playerId: 'newcomer',
+        availableTimesConstruction: ['09:00'],
+        daysConstruction: 1,
+      }),
+    ];
+    const { slots, unassignedPlayerIds } = computeDayAssignment(subs, 'construction');
+    expect(slots['09:00'].playerId).toBe('newcomer');
+    expect(slots['09:30'].playerId).toBe('mid');
+    expect(slots['10:00'].playerId).toBe('high');
+    expect(unassignedPlayerIds).toEqual([]);
+  });
+
   it('fills as many of the 48 slots as the selections allow', () => {
     const subs = ALL_SLOTS.map((slot, i) =>
       submission({ playerId: `p${i}`, availableTimesConstruction: [slot], daysConstruction: 1 }),
