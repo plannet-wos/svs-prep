@@ -137,3 +137,14 @@ mat-card-content.grid,
     display: inline-block;
   }
 }
+
+.too-low-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 0;
+
+  mat-icon {
+    color: var(--mat-sys-primary);
+  }
+}

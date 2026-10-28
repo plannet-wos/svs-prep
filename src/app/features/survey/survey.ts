@@ -21,6 +21,7 @@ import {
   formatShortDate,
   furnaceLevelOptions,
   maxedFurnaceLabel,
+  tooLowFurnaceLabel,
   prepWeekMonday,
 } from '../../core/models/svs-form.model';
 import { SvsSubmission } from '../../core/models/svs-submission.model';
@@ -159,10 +160,23 @@ export class SurveyComponent {
     return form ? formatBattleDate(form.battleDate) : '';
   }
 
-  /** ["Lower than FC8", "FC8 (not maxed)", "FC8 maxed"] parametrized by this round's FC level. */
+  /** ["Lower than FC3", "Lower than FC8", "FC8 (not maxed)", "FC8 maxed"] parametrized by this
+   *  round's FC level — the first (too-low) option only on rounds that have one. */
   get furnaceLevelOptions(): readonly string[] {
     const form = this.openForm();
-    return form ? furnaceLevelOptions(form.highestFcLevel) : [];
+    if (!form) return [];
+    const tooLow = tooLowFurnaceLabel(form.highestFcLevel);
+    const options = furnaceLevelOptions(form.highestFcLevel);
+    return tooLow ? [tooLow, ...options] : options;
+  }
+
+  /** Too-low players can't score full points, so the rest of the survey is hidden behind a notice
+   *  and submit() refuses to save them — they never reach the assignment algorithm. */
+  get tooLowFurnace(): boolean {
+    const form = this.openForm();
+    return (
+      !!form && this.form.controls.furnaceLevel.value === tooLowFurnaceLabel(form.highestFcLevel)
+    );
   }
 
   /** "7. September – 11. September" — the Monday-Friday prep week leading up to the battle. */
@@ -337,7 +351,7 @@ export class SurveyComponent {
 
   async submit(): Promise<void> {
     const form = this.openForm();
-    if (!form) return;
+    if (!form || this.tooLowFurnace) return;
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -373,7 +387,12 @@ export class SurveyComponent {
         ? !(await this.players.exists(answers.playerId))
         : false;
 
-      await this.submissions.save(form.id, answers.playerId, { ...answers, pendingApproval }, !existing);
+      await this.submissions.save(
+        form.id,
+        answers.playerId,
+        { ...answers, pendingApproval },
+        !existing,
+      );
 
       if (pendingApproval) {
         this.snackBar.open('Your answers were saved.', 'OK', { duration: 4000 });

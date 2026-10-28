@@ -119,313 +119,327 @@
             }
           </div>
 
-          @if (form.controls.rfc.disabled) {
-            <p class="field-hint">
-              You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so RFC and FC below don't
-              apply — grayed out and zeroed.
+          @if (tooLowFurnace) {
+            <p class="too-low-notice">
+              <mat-icon>info</mat-icon>
+              <span
+                >Your account is too low level to score full points in SvS. Therefore we
+                unfortunately can't assign you an appointment. Thank you for understanding.</span
+              >
             </p>
-          }
-          <div class="grid two spaced">
-            <mat-form-field appearance="outline">
-              <mat-label>Refined FC (RFC)</mat-label>
-              <input matInput type="number" min="0" formControlName="rfc" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Normal FC</mat-label>
-              <input matInput type="number" min="0" formControlName="fc" />
-            </mat-form-field>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Construction -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title
-            >{{ buffDayLabel(activeForm.constructionDay) }} — Construction</mat-card-title
-          >
-          <mat-card-subtitle
-            >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
-            speedups you'll use for Construction.</mat-card-subtitle
-          >
-        </mat-card-header>
-        <mat-card-content>
-          <mat-checkbox
-            [checked]="wantsConstruction()"
-            [disabled]="form.controls.rfc.disabled"
-            (change)="onWantsConstructionChange($event.checked)"
-          >
-            I want an appointment for Construction
-          </mat-checkbox>
-          @if (form.controls.rfc.disabled) {
-            <p class="field-hint">
-              You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so you're not eligible for
-              a Construction appointment.
-            </p>
-          } @else if (!wantsConstruction()) {
-            <p class="field-hint">You won't be considered for a Construction appointment.</p>
-          }
-          @if (wantsConstruction()) {
-            <mat-form-field appearance="outline" class="full" id="daysConstruction">
-              <mat-label>How many DAYS will you use for Construction?</mat-label>
-              <input
-                matInput
-                type="number"
-                min="0"
-                [max]="maxSpeedupDays"
-                formControlName="daysConstruction"
-              />
-              @if (
-                form.controls.daysConstruction.hasError('required') &&
-                form.controls.daysConstruction.touched
-              ) {
-                <mat-error>Required</mat-error>
-              } @else if (
-                form.controls.daysConstruction.hasError('max') &&
-                form.controls.daysConstruction.touched
-              ) {
-                <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
-              } @else if (
-                form.controls.daysConstruction.hasError('min') &&
-                form.controls.daysConstruction.touched
-              ) {
-                <mat-error>Can't be negative</mat-error>
-              }
-            </mat-form-field>
-            <div
-              class="question"
-              id="availableTimesConstruction"
-              [class.invalid]="
-                form.controls.availableTimesConstruction.invalid &&
-                form.controls.availableTimesConstruction.touched
-              "
-            >
-              <app-day-availability-picker
-                formControlName="availableTimesConstruction"
-                [minSlots]="minTimeSlots"
-              />
-            </div>
-          }
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Research -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>{{ buffDayLabel(activeForm.researchDay) }} — Research</mat-card-title>
-          <mat-card-subtitle
-            >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
-            speedups you'll use for Research.</mat-card-subtitle
-          >
-        </mat-card-header>
-        <mat-card-content>
-          <mat-checkbox
-            [checked]="wantsResearch()"
-            (change)="onWantsResearchChange($event.checked)"
-          >
-            I want an appointment for Research
-          </mat-checkbox>
-          @if (!wantsResearch()) {
-            <p class="field-hint">You won't be considered for a Research appointment.</p>
-          }
-          @if (wantsResearch()) {
-            <mat-form-field appearance="outline" class="full" id="daysResearch">
-              <mat-label>How many DAYS will you use for Research?</mat-label>
-              <input
-                matInput
-                type="number"
-                min="0"
-                [max]="maxSpeedupDays"
-                formControlName="daysResearch"
-              />
-              @if (
-                form.controls.daysResearch.hasError('required') &&
-                form.controls.daysResearch.touched
-              ) {
-                <mat-error>Required</mat-error>
-              } @else if (
-                form.controls.daysResearch.hasError('max') && form.controls.daysResearch.touched
-              ) {
-                <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
-              } @else if (
-                form.controls.daysResearch.hasError('min') && form.controls.daysResearch.touched
-              ) {
-                <mat-error>Can't be negative</mat-error>
-              }
-            </mat-form-field>
-            <div
-              class="question"
-              id="availableTimesResearch"
-              [class.invalid]="
-                form.controls.availableTimesResearch.invalid &&
-                form.controls.availableTimesResearch.touched
-              "
-            >
-              <app-day-availability-picker
-                formControlName="availableTimesResearch"
-                [minSlots]="minTimeSlots"
-              />
-            </div>
-          }
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Troop Training -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title
-            >{{ buffDayLabel(activeForm.trainingDay) }} — Troop Training</mat-card-title
-          >
-          <mat-card-subtitle
-            >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
-            speedups you'll use for Troop Training.</mat-card-subtitle
-          >
-        </mat-card-header>
-        <mat-card-content>
-          <mat-checkbox
-            [checked]="wantsTraining()"
-            (change)="onWantsTrainingChange($event.checked)"
-          >
-            I want an appointment for Troop Training
-          </mat-checkbox>
-          @if (!wantsTraining()) {
-            <p class="field-hint">You won't be considered for a Troop Training appointment.</p>
-          }
-          @if (wantsTraining()) {
-            <mat-form-field appearance="outline" class="full" id="daysTraining">
-              <mat-label>How many DAYS will you use for Troop Training?</mat-label>
-              <input
-                matInput
-                type="number"
-                min="0"
-                [max]="maxSpeedupDays"
-                formControlName="daysTraining"
-              />
-              @if (
-                form.controls.daysTraining.hasError('required') &&
-                form.controls.daysTraining.touched
-              ) {
-                <mat-error>Required</mat-error>
-              } @else if (
-                form.controls.daysTraining.hasError('max') && form.controls.daysTraining.touched
-              ) {
-                <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
-              } @else if (
-                form.controls.daysTraining.hasError('min') && form.controls.daysTraining.touched
-              ) {
-                <mat-error>Can't be negative</mat-error>
-              }
-            </mat-form-field>
-            <div
-              class="question"
-              id="availableTimesTraining"
-              [class.invalid]="
-                form.controls.availableTimesTraining.invalid &&
-                form.controls.availableTimesTraining.touched
-              "
-            >
-              <app-day-availability-picker
-                formControlName="availableTimesTraining"
-                [minSlots]="minTimeSlots"
-              />
-            </div>
-          }
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Battle & card -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>SvS battle {{ battleShortDateLabel }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div
-            class="question"
-            id="participation"
-            [class.invalid]="
-              form.controls.participation.invalid && form.controls.participation.touched
-            "
-          >
-            <label class="section-label"
-              >Will you participate in the SvS battle on {{ battleDateLabel }}?</label
-            >
-            <mat-radio-group formControlName="participation" class="radio-col">
-              @for (opt of participationOptions; track opt) {
-                <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
-              }
-            </mat-radio-group>
-            @if (form.controls.participation.invalid && form.controls.participation.touched) {
-              <p class="field-error">Required</p>
-            }
-          </div>
-
-          <div
-            class="question"
-            id="ultraValueCard"
-            [class.invalid]="
-              form.controls.ultraValueCard.invalid && form.controls.ultraValueCard.touched
-            "
-          >
-            <label class="section-label"
-              >Do you have the Ultra Value Monthly Card (auto-heal)?</label
-            >
-            <mat-radio-group formControlName="ultraValueCard" class="radio-col">
-              @for (opt of ultraCardOptions; track opt) {
-                <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
-              }
-            </mat-radio-group>
-            @if (form.controls.ultraValueCard.invalid && form.controls.ultraValueCard.touched) {
-              <p class="field-error">Required</p>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Feedback (fully optional) -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Feedback</mat-card-title>
-          <mat-card-subtitle
-            >Optional — skip anything you don't have an opinion on.</mat-card-subtitle
-          >
-        </mat-card-header>
-        <mat-card-content>
-          <label class="section-label"
-            >Do you find this process for appointments fair to everyone?</label
-          >
-          <mat-radio-group formControlName="fairProcess" class="radio-row">
-            <mat-radio-button value="Yes">Yes</mat-radio-button>
-            <mat-radio-button value="No">No</mat-radio-button>
-          </mat-radio-group>
-
-          @if (form.controls.fairProcess.value === 'No') {
-            <mat-form-field appearance="outline" class="full">
-              <mat-label>Tell us more</mat-label>
-              <textarea matInput formControlName="fairProcessDetails" rows="2"></textarea>
-            </mat-form-field>
-          }
-
-          <mat-form-field appearance="outline" class="full">
-            <mat-label>What would you like to see changed for SvS preparation next time?</mat-label>
-            <textarea matInput formControlName="changeSuggestion" rows="2"></textarea>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full">
-            <mat-label>Any general feedback you would like to give the SVS Team?</mat-label>
-            <textarea matInput formControlName="feedback" rows="2"></textarea>
-          </mat-form-field>
-        </mat-card-content>
-      </mat-card>
-
-      <div class="submit-row">
-        <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
-          @if (submitting()) {
-            <mat-progress-spinner diameter="20" mode="indeterminate" />
           } @else {
-            Submit
+            @if (form.controls.rfc.disabled) {
+              <p class="field-hint">
+                You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so RFC and FC below don't
+                apply — grayed out and zeroed.
+              </p>
+            }
+            <div class="grid two spaced">
+              <mat-form-field appearance="outline">
+                <mat-label>Refined FC (RFC)</mat-label>
+                <input matInput type="number" min="0" formControlName="rfc" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Normal FC</mat-label>
+                <input matInput type="number" min="0" formControlName="fc" />
+              </mat-form-field>
+            </div>
           }
-        </button>
-      </div>
+        </mat-card-content>
+      </mat-card>
+
+      @if (!tooLowFurnace) {
+        <!-- Construction -->
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title
+              >{{ buffDayLabel(activeForm.constructionDay) }} — Construction</mat-card-title
+            >
+            <mat-card-subtitle
+              >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
+              speedups you'll use for Construction.</mat-card-subtitle
+            >
+          </mat-card-header>
+          <mat-card-content>
+            <mat-checkbox
+              [checked]="wantsConstruction()"
+              [disabled]="form.controls.rfc.disabled"
+              (change)="onWantsConstructionChange($event.checked)"
+            >
+              I want an appointment for Construction
+            </mat-checkbox>
+            @if (form.controls.rfc.disabled) {
+              <p class="field-hint">
+                You're {{ maxedFurnaceLabel(activeForm.highestFcLevel) }}, so you're not eligible
+                for a Construction appointment.
+              </p>
+            } @else if (!wantsConstruction()) {
+              <p class="field-hint">You won't be considered for a Construction appointment.</p>
+            }
+            @if (wantsConstruction()) {
+              <mat-form-field appearance="outline" class="full" id="daysConstruction">
+                <mat-label>How many DAYS will you use for Construction?</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [max]="maxSpeedupDays"
+                  formControlName="daysConstruction"
+                />
+                @if (
+                  form.controls.daysConstruction.hasError('required') &&
+                  form.controls.daysConstruction.touched
+                ) {
+                  <mat-error>Required</mat-error>
+                } @else if (
+                  form.controls.daysConstruction.hasError('max') &&
+                  form.controls.daysConstruction.touched
+                ) {
+                  <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
+                } @else if (
+                  form.controls.daysConstruction.hasError('min') &&
+                  form.controls.daysConstruction.touched
+                ) {
+                  <mat-error>Can't be negative</mat-error>
+                }
+              </mat-form-field>
+              <div
+                class="question"
+                id="availableTimesConstruction"
+                [class.invalid]="
+                  form.controls.availableTimesConstruction.invalid &&
+                  form.controls.availableTimesConstruction.touched
+                "
+              >
+                <app-day-availability-picker
+                  formControlName="availableTimesConstruction"
+                  [minSlots]="minTimeSlots"
+                />
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Research -->
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>{{ buffDayLabel(activeForm.researchDay) }} — Research</mat-card-title>
+            <mat-card-subtitle
+              >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
+              speedups you'll use for Research.</mat-card-subtitle
+            >
+          </mat-card-header>
+          <mat-card-content>
+            <mat-checkbox
+              [checked]="wantsResearch()"
+              (change)="onWantsResearchChange($event.checked)"
+            >
+              I want an appointment for Research
+            </mat-checkbox>
+            @if (!wantsResearch()) {
+              <p class="field-hint">You won't be considered for a Research appointment.</p>
+            }
+            @if (wantsResearch()) {
+              <mat-form-field appearance="outline" class="full" id="daysResearch">
+                <mat-label>How many DAYS will you use for Research?</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [max]="maxSpeedupDays"
+                  formControlName="daysResearch"
+                />
+                @if (
+                  form.controls.daysResearch.hasError('required') &&
+                  form.controls.daysResearch.touched
+                ) {
+                  <mat-error>Required</mat-error>
+                } @else if (
+                  form.controls.daysResearch.hasError('max') && form.controls.daysResearch.touched
+                ) {
+                  <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
+                } @else if (
+                  form.controls.daysResearch.hasError('min') && form.controls.daysResearch.touched
+                ) {
+                  <mat-error>Can't be negative</mat-error>
+                }
+              </mat-form-field>
+              <div
+                class="question"
+                id="availableTimesResearch"
+                [class.invalid]="
+                  form.controls.availableTimesResearch.invalid &&
+                  form.controls.availableTimesResearch.touched
+                "
+              >
+                <app-day-availability-picker
+                  formControlName="availableTimesResearch"
+                  [minSlots]="minTimeSlots"
+                />
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Troop Training -->
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title
+              >{{ buffDayLabel(activeForm.trainingDay) }} — Troop Training</mat-card-title
+            >
+            <mat-card-subtitle
+              >Pick your available 30-min slots (at least {{ minTimeSlots }}) and how many days of
+              speedups you'll use for Troop Training.</mat-card-subtitle
+            >
+          </mat-card-header>
+          <mat-card-content>
+            <mat-checkbox
+              [checked]="wantsTraining()"
+              (change)="onWantsTrainingChange($event.checked)"
+            >
+              I want an appointment for Troop Training
+            </mat-checkbox>
+            @if (!wantsTraining()) {
+              <p class="field-hint">You won't be considered for a Troop Training appointment.</p>
+            }
+            @if (wantsTraining()) {
+              <mat-form-field appearance="outline" class="full" id="daysTraining">
+                <mat-label>How many DAYS will you use for Troop Training?</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [max]="maxSpeedupDays"
+                  formControlName="daysTraining"
+                />
+                @if (
+                  form.controls.daysTraining.hasError('required') &&
+                  form.controls.daysTraining.touched
+                ) {
+                  <mat-error>Required</mat-error>
+                } @else if (
+                  form.controls.daysTraining.hasError('max') && form.controls.daysTraining.touched
+                ) {
+                  <mat-error>Enter a number of days — {{ maxSpeedupDays }} or fewer</mat-error>
+                } @else if (
+                  form.controls.daysTraining.hasError('min') && form.controls.daysTraining.touched
+                ) {
+                  <mat-error>Can't be negative</mat-error>
+                }
+              </mat-form-field>
+              <div
+                class="question"
+                id="availableTimesTraining"
+                [class.invalid]="
+                  form.controls.availableTimesTraining.invalid &&
+                  form.controls.availableTimesTraining.touched
+                "
+              >
+                <app-day-availability-picker
+                  formControlName="availableTimesTraining"
+                  [minSlots]="minTimeSlots"
+                />
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Battle & card -->
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>SvS battle {{ battleShortDateLabel }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div
+              class="question"
+              id="participation"
+              [class.invalid]="
+                form.controls.participation.invalid && form.controls.participation.touched
+              "
+            >
+              <label class="section-label"
+                >Will you participate in the SvS battle on {{ battleDateLabel }}?</label
+              >
+              <mat-radio-group formControlName="participation" class="radio-col">
+                @for (opt of participationOptions; track opt) {
+                  <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+                }
+              </mat-radio-group>
+              @if (form.controls.participation.invalid && form.controls.participation.touched) {
+                <p class="field-error">Required</p>
+              }
+            </div>
+
+            <div
+              class="question"
+              id="ultraValueCard"
+              [class.invalid]="
+                form.controls.ultraValueCard.invalid && form.controls.ultraValueCard.touched
+              "
+            >
+              <label class="section-label"
+                >Do you have the Ultra Value Monthly Card (auto-heal)?</label
+              >
+              <mat-radio-group formControlName="ultraValueCard" class="radio-col">
+                @for (opt of ultraCardOptions; track opt) {
+                  <mat-radio-button [value]="opt">{{ opt }}</mat-radio-button>
+                }
+              </mat-radio-group>
+              @if (form.controls.ultraValueCard.invalid && form.controls.ultraValueCard.touched) {
+                <p class="field-error">Required</p>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Feedback (fully optional) -->
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Feedback</mat-card-title>
+            <mat-card-subtitle
+              >Optional — skip anything you don't have an opinion on.</mat-card-subtitle
+            >
+          </mat-card-header>
+          <mat-card-content>
+            <label class="section-label"
+              >Do you find this process for appointments fair to everyone?</label
+            >
+            <mat-radio-group formControlName="fairProcess" class="radio-row">
+              <mat-radio-button value="Yes">Yes</mat-radio-button>
+              <mat-radio-button value="No">No</mat-radio-button>
+            </mat-radio-group>
+
+            @if (form.controls.fairProcess.value === 'No') {
+              <mat-form-field appearance="outline" class="full">
+                <mat-label>Tell us more</mat-label>
+                <textarea matInput formControlName="fairProcessDetails" rows="2"></textarea>
+              </mat-form-field>
+            }
+
+            <mat-form-field appearance="outline" class="full">
+              <mat-label
+                >What would you like to see changed for SvS preparation next time?</mat-label
+              >
+              <textarea matInput formControlName="changeSuggestion" rows="2"></textarea>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Any general feedback you would like to give the SVS Team?</mat-label>
+              <textarea matInput formControlName="feedback" rows="2"></textarea>
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+
+        <div class="submit-row">
+          <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+            @if (submitting()) {
+              <mat-progress-spinner diameter="20" mode="indeterminate" />
+            } @else {
+              Submit
+            }
+          </button>
+        </div>
+      }
     </form>
   } @else {
     <mat-card>
