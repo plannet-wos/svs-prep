@@ -1,3 +1,4 @@
+import { computeConstructionScore, tierTotals, TierTotals } from '../config/construction-costs';
 import { ALL_SLOTS } from '../config/slot-grid';
 import {
   AVAILABILITY_FIELD,
@@ -8,12 +9,14 @@ import {
   PINNED_SLOT_FIELD,
   SvsAssignment,
 } from '../models/svs-assignment.model';
+import { FcLevel } from '../models/svs-form.model';
 import { SvsSubmission } from '../models/svs-submission.model';
 
 /**
  * The appointment-assignment algorithm: for each buff day independently, matches players to one
  * of their own selected 30-min slots (core/config/slot-grid.ts's 48-slot grid), giving priority to
- * whoever put in the most speedup-days for that buff.
+ * whoever put in the most speedup-days for that buff — or, on Construction day, whoever can score
+ * the most prep points from their FC, RFC and speedups combined (see priorityScore).
  *
  * This is a maximum bipartite matching problem (applicants <-> slots, each applicant only willing
  * to take one of their own selected slots), with a priority order over applicants layered on top —
@@ -58,14 +61,35 @@ import { SvsSubmission } from '../models/svs-submission.model';
  */
 
 /**
- * Higher speedup-days wins; ties go to whoever submitted first; playerId as a final tiebreaker.
+ * What a player is ranked by for a buff day. Research and Training: speedup-days. Construction:
+ * the prep points their FC, RFC and speedups can score together (see computeConstructionScore) —
+ * whenever `constructionTier` is known, i.e. the round's top FC tier has cost data. Without it
+ * (no round level passed, or an FC1 round) Construction falls back to speedup-days too.
+ */
+function priorityScore(
+  sub: SvsSubmission,
+  day: BuffDay,
+  constructionTier: TierTotals | null,
+): number {
+  if (day === 'construction' && constructionTier) {
+    return computeConstructionScore(sub, constructionTier);
+  }
+  return sub[DAYS_FIELD[day]] as number;
+}
+
+/**
+ * Higher priorityScore wins; ties go to whoever submitted first; playerId as a final tiebreaker.
  * The single source of truth for "who outranks whom" for a buff day — shared by the matching
  * algorithm below and by playerStatus()'s rank display, so the two can never disagree.
  */
-function comparePriority(a: SvsSubmission, b: SvsSubmission, day: BuffDay): number {
-  const daysField = DAYS_FIELD[day];
-  const ad = a[daysField] as number;
-  const bd = b[daysField] as number;
+function comparePriority(
+  a: SvsSubmission,
+  b: SvsSubmission,
+  day: BuffDay,
+  constructionTier: TierTotals | null,
+): number {
+  const ad = priorityScore(a, day, constructionTier);
+  const bd = priorityScore(b, day, constructionTier);
   if (ad !== bd) return bd - ad;
   if (a.createdAt !== b.createdAt) return a.createdAt - b.createdAt;
   return a.playerId < b.playerId ? -1 : a.playerId > b.playerId ? 1 : 0;
@@ -82,11 +106,17 @@ export interface DayAssignmentResult {
   unassignedPlayerIds: string[];
 }
 
-/** Maximum-matching assignment for a single buff day. Pure function — no Firestore, easy to unit test. */
+/**
+ * Maximum-matching assignment for a single buff day. Pure function — no Firestore, easy to unit
+ * test. `highestFcLevel` is the round's SvsForm.highestFcLevel; it switches Construction from
+ * speedup-days to the combined FC/RFC/speedup score (see priorityScore).
+ */
 export function computeDayAssignment(
   submissions: SvsSubmission[],
   day: BuffDay,
+  highestFcLevel?: FcLevel,
 ): DayAssignmentResult {
+  const constructionTier = highestFcLevel ? tierTotals(highestFcLevel) : null;
   const availabilityField = AVAILABILITY_FIELD[day];
   const pinnedField = PINNED_SLOT_FIELD[day];
   const slotOrder = new Map(ALL_SLOTS.map((slot, i) => [slot, i]));
@@ -144,7 +174,7 @@ export function computeDayAssignment(
   // what guarantees a higher-priority applicant is never left unseated while a strictly-lower-
   // priority one holds a slot they selected.
   const byPriority = [...byPlayerId].sort((a, b) =>
-    comparePriority(a.submission, b.submission, day),
+    comparePriority(a.submission, b.submission, day, constructionTier),
   );
 
   // Only counts as having "entered the contest" if they selected at least one slot — someone who
@@ -164,6 +194,9 @@ export function computeDayAssignment(
       playerId: applicant.submission.playerId,
       allianceAndName: applicant.submission.allianceAndName,
       days: applicant.submission[DAYS_FIELD[day]] as number,
+      ...(day === 'construction' && constructionTier
+        ? { score: priorityScore(applicant.submission, day, constructionTier) }
+        : {}),
     };
   }
 
@@ -171,9 +204,13 @@ export function computeDayAssignment(
 }
 
 /** Runs computeDayAssignment for all three buff days and assembles the full SvsAssignment doc. */
-export function computeAssignment(formId: string, submissions: SvsSubmission[]): SvsAssignment {
+export function computeAssignment(
+  formId: string,
+  submissions: SvsSubmission[],
+  highestFcLevel?: FcLevel,
+): SvsAssignment {
   const results = Object.fromEntries(
-    BUFF_DAYS.map((day) => [day, computeDayAssignment(submissions, day)]),
+    BUFF_DAYS.map((day) => [day, computeDayAssignment(submissions, day, highestFcLevel)]),
   ) as Record<BuffDay, DayAssignmentResult>;
 
   return {
@@ -193,7 +230,7 @@ export interface PlayerDayStatus {
   seated: boolean;
   /** The slot they currently hold, if seated. */
   slot: string | null;
-  /** 1-based priority rank (by speedup-days, same tiebreak as the algorithm) among this day's
+  /** 1-based priority rank (same score and tiebreak as the algorithm) among this day's
    *  contenders — null if this player selected no slots for that day at all. */
   rank: number | null;
   /** How many players are contending for this day's slots. */
@@ -209,12 +246,14 @@ export function playerStatus(
   submissions: SvsSubmission[],
   assignment: SvsAssignment,
   playerId: string,
+  highestFcLevel?: FcLevel,
 ): PlayerDayStatus[] {
+  const constructionTier = highestFcLevel ? tierTotals(highestFcLevel) : null;
   return BUFF_DAYS.map((day) => {
     const availabilityField = AVAILABILITY_FIELD[day];
     const contenders = submissions
       .filter((s) => (s[availabilityField] as string[]).length > 0)
-      .sort((a, b) => comparePriority(a, b, day));
+      .sort((a, b) => comparePriority(a, b, day, constructionTier));
     const rankIndex = contenders.findIndex((s) => s.playerId === playerId);
 
     const seatedSlot = Object.entries(assignment[day]).find(

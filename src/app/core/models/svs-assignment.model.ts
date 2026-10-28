@@ -23,11 +23,14 @@ export const PINNED_SLOT_FIELD: Record<BuffDay, keyof SvsSubmission> = {
   training: 'pinnedSlotTraining',
 };
 
-/** One filled slot: who holds it, and how many speedup-days earned them priority for it. */
+/** One filled slot: who holds it, and what earned them priority for it. */
 export interface AssignmentEntry {
   playerId: string;
   allianceAndName: string;
   days: number;
+  /** Construction only: the combined FC/RFC/speedup prep-point score they were ranked by (see
+   *  core/config/construction-costs.ts). Absent on rounds that rank Construction by days. */
+  score?: number;
 }
 
 /**
