@@ -80,13 +80,19 @@
   font-size: 0.85rem;
 }
 
-// Always 3 equal columns. minmax(0, 1fr) instead of plain 1fr so a long name can't widen its
-// column (1fr's minimum is the content width); the name ellipsizes instead.
+// Equal columns: 6 on desktop, 3 on phones. minmax(0, 1fr) instead of plain 1fr so a long name
+// can't widen its column (1fr's minimum is the content width); the name ellipsizes instead.
 .slot-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 4px;
   padding: 6px;
+}
+
+@media (max-width: 620px) {
+  .slot-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .slot-cell {
