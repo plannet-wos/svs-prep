@@ -64,7 +64,7 @@ import { SvsSubmission } from '../models/svs-submission.model';
  * What a player is ranked by for a buff day. Research and Training: speedup-days. Construction:
  * the prep points their FC, RFC and speedups can score together (see computeConstructionScore) —
  * whenever `constructionTier` is known, i.e. the round's top FC tier has cost data. Without it
- * (no round level passed, or FC5-and-below rounds) Construction falls back to speedup-days too.
+ * (no round level passed, or an FC1 round) Construction falls back to speedup-days too.
  */
 function priorityScore(
   sub: SvsSubmission,

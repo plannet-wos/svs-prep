@@ -393,7 +393,7 @@ describe('construction score ranking', () => {
     expect(slots['09:00'].score).toBeUndefined();
   });
 
-  it('falls back to speedup-days on rounds without cost data (FC5 and below)', () => {
+  it('falls back to speedup-days when no round level is known', () => {
     const subs = [
       submission({
         playerId: 'low',
@@ -403,7 +403,7 @@ describe('construction score ranking', () => {
       }),
       submission({ playerId: 'high', availableTimesConstruction: ['09:00'], daysConstruction: 10 }),
     ];
-    const { slots } = computeDayAssignment(subs, 'construction', 5);
+    const { slots } = computeDayAssignment(subs, 'construction');
     expect(slots['09:00'].playerId).toBe('high');
   });
 
