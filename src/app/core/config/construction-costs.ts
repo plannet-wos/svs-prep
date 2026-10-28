@@ -57,12 +57,20 @@ export const FC_BUILDINGS: readonly BuildingCosts[] = [
 
 const STAGES_PER_TIER = 5;
 
+/**
+ * Real build time as a share of base time, for a typical player's construction speed bonuses.
+ * Measured in-game (Fabian, 2026-10-28): his full Furnace tiers take 24d7h / 29d12h / 32d23h /
+ * 20d20h / 32d23h for FC5→6 … FC9→10, which is 0.32–0.33 of the base times above for every tier.
+ */
+export const BUILD_TIME_FACTOR = 0.33;
+
 /** SvS prep points per unit spent on Construction day. */
 export const CONSTRUCTION_POINTS = { fc: 2000, rfc: 30000, speedupMinute: 30 } as const;
 
 export interface TierTotals {
   fc: number;
   rfc: number;
+  /** Speedup minutes needed, i.e. base build time × BUILD_TIME_FACTOR. */
   minutes: number;
 }
 
@@ -79,7 +87,7 @@ export function tierTotals(highestFcLevel: FcLevel): TierTotals | null {
     (sum, b) => ({
       fc: sum.fc + b.fc[tier],
       rfc: sum.rfc + b.rfc[tier],
-      minutes: sum.minutes + b.minutesPerStage[tier] * STAGES_PER_TIER,
+      minutes: sum.minutes + b.minutesPerStage[tier] * STAGES_PER_TIER * BUILD_TIME_FACTOR,
     }),
     { fc: 0, rfc: 0, minutes: 0 },
   );
@@ -90,8 +98,7 @@ export function tierTotals(highestFcLevel: FcLevel): TierTotals | null {
  * build time (paid with speedups) together, so whichever runs out first limits the other two:
  * each resource is turned into "fraction of the tier it can pay for", the smallest fraction wins,
  * and the score is that fraction of the full tier's FC + RFC + speedup points. Speedup-days are
- * measured against base build time (no speed bonus), so speedups look slightly tighter than they
- * really are.
+ * measured against build time at a typical speed bonus (BUILD_TIME_FACTOR), not each player's own.
  */
 export function computeConstructionScore(
   sub: { fc: number; rfc: number; daysConstruction: number },

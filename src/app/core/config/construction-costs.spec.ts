@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { computeConstructionScore, CONSTRUCTION_POINTS, tierTotals } from './construction-costs';
+import {
+  BUILD_TIME_FACTOR,
+  computeConstructionScore,
+  CONSTRUCTION_POINTS,
+  tierTotals,
+} from './construction-costs';
 
 describe('tierTotals', () => {
   it('sums every FC building for the round’s top tier', () => {
-    expect(tierTotals(8)).toEqual({ fc: 3726, rfc: 414, minutes: 5 * 74016 });
+    const totals = tierTotals(8)!;
+    expect(totals.fc).toBe(3726);
+    expect(totals.rfc).toBe(414);
+    expect(totals.minutes).toBeCloseTo(5 * 74016 * BUILD_TIME_FACTOR);
   });
 
   it('has no data for FC5-and-below rounds', () => {
