@@ -41,9 +41,7 @@ export class AuthService {
   readonly account = this._account.asReadonly();
   readonly isAuthenticated = computed(() => this._user() !== null);
   readonly isActive = computed(() => this._account()?.status === 'active');
-  readonly isSuperAdmin = computed(
-    () => this.isActive() && this._account()?.rank === RANK.SUPERADMIN,
-  );
+  readonly isSuperAdmin = computed(() => this.isActive() && this._account()?.rank === RANK.SUPERADMIN);
   readonly rank = computed<Rank | null>(() => this._account()?.rank ?? null);
 
   /**
@@ -58,9 +56,7 @@ export class AuthService {
    * awaits whichever settle-gate is current.
    */
   private settledResolve!: () => void;
-  private settledPromise = new Promise<void>((resolve) => {
-    this.settledResolve = resolve;
-  });
+  private settledPromise = new Promise<void>((resolve) => { this.settledResolve = resolve; });
 
   constructor() {
     onAuthStateChanged(this.auth, (user) => this.applyUser(user));
@@ -111,9 +107,7 @@ export class AuthService {
     // proceed here is safe — it just re-reads the (fresher) signals being set above, same as
     // if it had awaited the new gate instead.
     const previousResolve = this.settledResolve;
-    this.settledPromise = new Promise((resolve) => {
-      this.settledResolve = resolve;
-    });
+    this.settledPromise = new Promise((resolve) => { this.settledResolve = resolve; });
     previousResolve();
 
     if (user) {

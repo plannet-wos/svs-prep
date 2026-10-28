@@ -22,8 +22,7 @@ export const superadminGuard: CanActivateFn = async (route) => {
 
   const account = auth.account();
   const rank = auth.rank();
-  if (!auth.isActive() || rank === null || account === null)
-    return router.createUrlTree(['/login']);
+  if (!auth.isActive() || rank === null || account === null) return router.createUrlTree(['/login']);
   if (rank > RANK.STATE_ADMIN) return router.createUrlTree(['/login']);
   if (rank === RANK.SUPERADMIN) return true;
 
