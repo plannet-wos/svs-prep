@@ -1,5 +1,16 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, where } from '@angular/fire/firestore';
+import {
+  Firestore,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from '@angular/fire/firestore';
 import { SvsForm, SvsFormWithId } from '../models/svs-form.model';
 
 const COLLECTION = 'svs_forms';
@@ -16,14 +27,16 @@ export class SvsFormService {
    * see the multi-state rollout plan.
    */
   async getAllForState(stateId: string): Promise<SvsFormWithId[]> {
-    const snap = await getDocs(query(collection(this.firestore, COLLECTION), where('stateId', '==', stateId)));
+    const snap = await getDocs(
+      query(collection(this.firestore, COLLECTION), where('stateId', '==', stateId)),
+    );
     const forms = snap.docs.map((d) => ({ id: d.id, ...(d.data() as SvsForm) }));
     return forms.sort((a, b) => b.battleDate.localeCompare(a.battleDate));
   }
 
   async getById(id: string): Promise<SvsFormWithId | null> {
     const snap = await getDoc(doc(this.firestore, COLLECTION, id));
-    return snap.exists() ? ({ id: snap.id, ...(snap.data() as SvsForm) }) : null;
+    return snap.exists() ? { id: snap.id, ...(snap.data() as SvsForm) } : null;
   }
 
   /** Creates a new form and returns its generated ID. */
@@ -38,7 +51,11 @@ export class SvsFormService {
   }
 
   async update(id: string, data: Omit<SvsForm, 'createdAt' | 'updatedAt'>): Promise<void> {
-    await setDoc(doc(this.firestore, COLLECTION, id), { ...data, updatedAt: Date.now() }, { merge: true });
+    await setDoc(
+      doc(this.firestore, COLLECTION, id),
+      { ...data, updatedAt: Date.now() },
+      { merge: true },
+    );
   }
 
   /** Permanently deletes a form. Its past submissions (svs_submissions) are left untouched. */

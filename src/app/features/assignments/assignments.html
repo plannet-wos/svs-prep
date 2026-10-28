@@ -27,7 +27,8 @@
       <p>
         Battle: <strong>{{ form()!.battleDate }}</strong
         >. Each player is slotted into one of the 30-min time slots they selected on the survey. If
-        someone with more speedup-days later needs your exact slot, you're automatically moved to a
+        someone with higher priority (more speedup-days, or on Construction day more points from FC,
+        RFC and speedups combined) later needs your exact slot, you're automatically moved to a
         different slot from your own selection — this page updates live, so keep it open if you want
         to watch.
       </p>
@@ -85,7 +86,9 @@
                         <span class="slot-time">{{ slot }}</span>
                         @if (entry) {
                           <span class="slot-holder">{{ entry.allianceAndName }}</span>
-                          <span class="slot-days">{{ entry.days }}d</span>
+                          <span class="slot-days">{{
+                            entry.score !== undefined ? formatScore(entry.score) : entry.days + 'd'
+                          }}</span>
                         } @else {
                           <span class="slot-empty">open</span>
                         }

@@ -2,7 +2,7 @@ import { Rank, Role } from '../constants/roles';
 
 /** A game server / "state" — the top-level scope everything else (alliances, accounts) lives under. */
 export interface StateDoc {
-  id: string;        // the state number as a string, e.g. "3038" — also the Firestore doc ID
+  id: string; // the state number as a string, e.g. "3038" — also the Firestore doc ID
   name?: string;
   createdAt: number;
 }
@@ -36,4 +36,7 @@ export interface Account {
 }
 
 /** Fields a candidate supplies when requesting a rank for themselves — the rest (status, mfaEnrolled, requestedAt) are set by the service. */
-export type AccountRequest = Pick<Account, 'uid' | 'email' | 'role' | 'rank' | 'stateId' | 'allianceId'>;
+export type AccountRequest = Pick<
+  Account,
+  'uid' | 'email' | 'role' | 'rank' | 'stateId' | 'allianceId'
+>;

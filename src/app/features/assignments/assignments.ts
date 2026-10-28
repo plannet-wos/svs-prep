@@ -138,6 +138,13 @@ export class SvsAssignmentsComponent implements OnDestroy {
     return !!me && entry?.playerId === me;
   }
 
+  /** Construction score in compact form, e.g. 2.8M / 450k. */
+  formatScore(score: number): string {
+    if (score >= 1_000_000) return `${(score / 1_000_000).toFixed(1)}M`;
+    if (score >= 1_000) return `${Math.round(score / 1_000)}k`;
+    return `${score}`;
+  }
+
   filledCount(day: BuffDay): number {
     return Object.keys(this.assignment()?.[day] ?? {}).length;
   }

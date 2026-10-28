@@ -349,3 +349,84 @@ describe('pinned slots (admin override)', () => {
     expect(result.research['10:00'].playerId).toBe('p1');
   });
 });
+
+describe('construction score ranking', () => {
+  it('ranks Construction by the limiting resource, not by speedup-days alone', () => {
+    // Lots of speedups but almost no RFC — RFC caps what they can actually build.
+    const speedupsOnly = submission({
+      playerId: 'speedups',
+      availableTimesConstruction: ['09:00'],
+      daysConstruction: 200,
+      fc: 5000,
+      rfc: 10,
+    });
+    const balanced = submission({
+      playerId: 'balanced',
+      availableTimesConstruction: ['09:00'],
+      daysConstruction: 60,
+      fc: 1500,
+      rfc: 200,
+    });
+    const { slots, unassignedPlayerIds } = computeDayAssignment(
+      [speedupsOnly, balanced],
+      'construction',
+      10,
+    );
+    expect(slots['09:00'].playerId).toBe('balanced');
+    expect(slots['09:00'].score).toBeGreaterThan(0);
+    expect(unassignedPlayerIds).toEqual(['speedups']);
+  });
+
+  it('still ranks Research and Training by speedup-days', () => {
+    const subs = [
+      submission({
+        playerId: 'rich',
+        availableTimesResearch: ['09:00'],
+        daysResearch: 1,
+        fc: 9999,
+        rfc: 9999,
+      }),
+      submission({ playerId: 'days', availableTimesResearch: ['09:00'], daysResearch: 10 }),
+    ];
+    const { slots } = computeDayAssignment(subs, 'research', 10);
+    expect(slots['09:00'].playerId).toBe('days');
+    expect(slots['09:00'].score).toBeUndefined();
+  });
+
+  it('falls back to speedup-days on rounds without cost data (FC5 and below)', () => {
+    const subs = [
+      submission({
+        playerId: 'low',
+        availableTimesConstruction: ['09:00'],
+        daysConstruction: 1,
+        fc: 999,
+      }),
+      submission({ playerId: 'high', availableTimesConstruction: ['09:00'], daysConstruction: 10 }),
+    ];
+    const { slots } = computeDayAssignment(subs, 'construction', 5);
+    expect(slots['09:00'].playerId).toBe('high');
+  });
+
+  it('uses the same ranking in playerStatus as in the assignment', () => {
+    const subs = [
+      submission({
+        playerId: 'a',
+        availableTimesConstruction: ['09:00'],
+        daysConstruction: 100,
+        rfc: 1,
+        fc: 100,
+      }),
+      submission({
+        playerId: 'b',
+        availableTimesConstruction: ['09:00'],
+        daysConstruction: 20,
+        rfc: 100,
+        fc: 800,
+      }),
+    ];
+    const assignment = computeAssignment('form1', subs, 8);
+    const [construction] = playerStatus(subs, assignment, 'b', 8);
+    expect(construction.rank).toBe(1);
+    expect(construction.seated).toBe(true);
+  });
+});

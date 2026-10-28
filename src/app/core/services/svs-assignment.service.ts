@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Firestore, Unsubscribe, doc, getDoc, onSnapshot, setDoc } from '@angular/fire/firestore';
 import { computeAssignment, PlayerDayStatus, playerStatus } from '../algorithms/assignment';
 import { SvsAssignment } from '../models/svs-assignment.model';
+import { SvsFormService } from './svs-form.service';
 import { SvsSubmissionService } from './svs-submission.service';
 
 const COLLECTION = 'svs_assignments';
@@ -19,6 +20,7 @@ const COLLECTION = 'svs_assignments';
 export class SvsAssignmentService {
   private readonly firestore = inject(Firestore);
   private readonly submissions = inject(SvsSubmissionService);
+  private readonly forms = inject(SvsFormService);
 
   async getByFormId(formId: string): Promise<SvsAssignment | null> {
     const snap = await getDoc(doc(this.firestore, COLLECTION, formId));
@@ -50,8 +52,11 @@ export class SvsAssignmentService {
    *  saves it — submissions still awaiting admin approval (see SvsSubmission.pendingApproval) are
    *  excluded entirely, same as if they hadn't submitted at all, until an admin approves them. */
   async recompute(formId: string): Promise<void> {
-    const submissions = await this.eligibleSubmissions(formId);
-    const assignment = computeAssignment(formId, submissions);
+    const [submissions, level] = await Promise.all([
+      this.eligibleSubmissions(formId),
+      this.highestFcLevel(formId),
+    ]);
+    const assignment = computeAssignment(formId, submissions, level);
     await setDoc(doc(this.firestore, COLLECTION, formId), assignment);
   }
 
@@ -64,8 +69,11 @@ export class SvsAssignmentService {
    * different notice for those instead — but filters the same as recompute() regardless.
    */
   async recomputeAndGetStatus(formId: string, playerId: string): Promise<PlayerDayStatus[]> {
-    const submissions = await this.eligibleSubmissions(formId);
-    const assignment = computeAssignment(formId, submissions);
+    const [submissions, level] = await Promise.all([
+      this.eligibleSubmissions(formId),
+      this.highestFcLevel(formId),
+    ]);
+    const assignment = computeAssignment(formId, submissions, level);
     try {
       await setDoc(doc(this.firestore, COLLECTION, formId), assignment);
     } catch (error) {
@@ -74,7 +82,12 @@ export class SvsAssignmentService {
         error,
       );
     }
-    return playerStatus(submissions, assignment, playerId);
+    return playerStatus(submissions, assignment, playerId, level);
+  }
+
+  /** The round's top FC level — what Construction-day scores are priced at (see assignment.ts). */
+  private async highestFcLevel(formId: string) {
+    return (await this.forms.getById(formId))?.highestFcLevel;
   }
 
   /** Every submission for this form that's actually eligible for an appointment — excludes
