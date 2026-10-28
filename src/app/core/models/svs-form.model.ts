@@ -69,6 +69,18 @@ export function furnaceLevelOptions(level: FcLevel): [string, string, string] {
   return [`Lower than FC${level}`, `FC${level} (not maxed)`, `FC${level} maxed`];
 }
 
+/**
+ * Survey-only first option for players too far behind to score full points this round. Not a
+ * fixed offset from the round's level, so mapped explicitly; FC3 rounds have no such option.
+ */
+const TOO_LOW_FC_LEVEL: Partial<Record<FcLevel, number>> = { 5: 1, 8: 3, 10: 5 };
+
+/** "Lower than FC3" for an FC8 round, etc. — or null when the round has no too-low option. */
+export function tooLowFurnaceLabel(level: FcLevel): string | null {
+  const tooLow = TOO_LOW_FC_LEVEL[level];
+  return tooLow === undefined ? null : `Lower than FC${tooLow}`;
+}
+
 /** The exact "FC{level} maxed" label — RFC/FC/construction-days don't apply once a player hits it. */
 export function maxedFurnaceLabel(level: FcLevel): string {
   return `FC${level} maxed`;
