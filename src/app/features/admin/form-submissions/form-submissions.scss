@@ -106,7 +106,9 @@ td.availability {
 }
 
 th {
-  opacity: 0.7;
+  // A muted colour rather than opacity: sticky header cells must stay opaque so rows scrolling
+  // underneath don't show through.
+  color: color-mix(in srgb, var(--mat-sys-on-surface) 70%, transparent);
   font-weight: 500;
   position: sticky;
   top: 0;
@@ -118,7 +120,6 @@ th.sortable {
   user-select: none;
 
   &:hover {
-    opacity: 1;
     color: var(--mat-sys-primary);
   }
 }
@@ -134,6 +135,61 @@ th.sortable {
 
 tbody tr:hover {
   background: color-mix(in srgb, var(--mat-sys-on-surface) 4%, transparent);
+}
+
+.total-line {
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+
+// Main submissions table: the wrapper scrolls in both directions (so the sticky header has a
+// scroll container to stick to), and the name column stays pinned on horizontal scroll.
+.submissions-table {
+  max-height: calc(100dvh - 120px);
+  overflow: auto;
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  th {
+    z-index: 2;
+  }
+
+  th:first-child,
+  td:first-child {
+    position: sticky;
+    left: 0;
+    border-right: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  td:first-child {
+    z-index: 1;
+    background: var(--mat-sys-surface);
+  }
+
+  th:first-child {
+    z-index: 3;
+  }
+
+  tbody tr:hover td:first-child {
+    background: color-mix(in srgb, var(--mat-sys-on-surface) 4%, var(--mat-sys-surface));
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  @media (max-width: 600px) {
+    th:first-child,
+    td:first-child {
+      min-width: 110px;
+      max-width: 40vw;
+      white-space: normal;
+      overflow-wrap: break-word;
+    }
+  }
 }
 
 .pin-badge {
