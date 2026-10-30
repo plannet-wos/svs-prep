@@ -137,6 +137,7 @@
             <div class="grid two spaced">
               <mat-form-field appearance="outline" id="rfc">
                 <mat-label>Refined FC (RFC)</mat-label>
+                <img matPrefix class="resource-icon" src="icons/rfc.png" alt="" />
                 <input matInput type="number" min="0" formControlName="rfc" />
                 @if (form.controls.rfc.hasError('positive') && form.controls.rfc.touched) {
                   <mat-error>Needed for a Construction appointment — enter more than 0</mat-error>
@@ -144,6 +145,7 @@
               </mat-form-field>
               <mat-form-field appearance="outline" id="fc">
                 <mat-label>Normal FC</mat-label>
+                <img matPrefix class="resource-icon" src="icons/fc.png" alt="" />
                 <input matInput type="number" min="0" formControlName="fc" />
                 @if (form.controls.fc.hasError('positive') && form.controls.fc.touched) {
                   <mat-error>Needed for a Construction appointment — enter more than 0</mat-error>

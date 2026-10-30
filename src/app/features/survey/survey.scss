@@ -102,6 +102,17 @@ mat-card-content.grid,
   margin-bottom: 4px;
 }
 
+.resource-icon {
+  width: 24px;
+  height: 24px;
+  margin: 0 8px 0 12px;
+  vertical-align: middle;
+}
+
+.mat-mdc-form-field-disabled .resource-icon {
+  opacity: 0.4;
+}
+
 .field-hint {
   opacity: 0.65;
   font-size: 0.75rem;
