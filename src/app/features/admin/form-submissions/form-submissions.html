@@ -135,7 +135,8 @@
         <mat-card-content>No submissions yet.</mat-card-content>
       </mat-card>
     } @else {
-      <div class="table-wrap">
+      <p class="total-line">Total submissions: {{ knownItems().length }}</p>
+      <div class="table-wrap submissions-table">
         <table>
           <thead>
             <tr>
