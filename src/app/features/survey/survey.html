@@ -135,13 +135,19 @@
               </p>
             }
             <div class="grid two spaced">
-              <mat-form-field appearance="outline">
+              <mat-form-field appearance="outline" id="rfc">
                 <mat-label>Refined FC (RFC)</mat-label>
                 <input matInput type="number" min="0" formControlName="rfc" />
+                @if (form.controls.rfc.hasError('positive') && form.controls.rfc.touched) {
+                  <mat-error>Needed for a Construction appointment — enter more than 0</mat-error>
+                }
               </mat-form-field>
-              <mat-form-field appearance="outline">
+              <mat-form-field appearance="outline" id="fc">
                 <mat-label>Normal FC</mat-label>
                 <input matInput type="number" min="0" formControlName="fc" />
+                @if (form.controls.fc.hasError('positive') && form.controls.fc.touched) {
+                  <mat-error>Needed for a Construction appointment — enter more than 0</mat-error>
+                }
               </mat-form-field>
             </div>
           }
@@ -201,6 +207,11 @@
                   form.controls.daysConstruction.touched
                 ) {
                   <mat-error>Can't be negative</mat-error>
+                } @else if (
+                  form.controls.daysConstruction.hasError('positive') &&
+                  form.controls.daysConstruction.touched
+                ) {
+                  <mat-error>Enter more than 0 days, or untick the appointment box above</mat-error>
                 }
               </mat-form-field>
               <div
@@ -262,6 +273,11 @@
                   form.controls.daysResearch.hasError('min') && form.controls.daysResearch.touched
                 ) {
                   <mat-error>Can't be negative</mat-error>
+                } @else if (
+                  form.controls.daysResearch.hasError('positive') &&
+                  form.controls.daysResearch.touched
+                ) {
+                  <mat-error>Enter more than 0 days, or untick the appointment box above</mat-error>
                 }
               </mat-form-field>
               <div
@@ -325,6 +341,11 @@
                   form.controls.daysTraining.hasError('min') && form.controls.daysTraining.touched
                 ) {
                   <mat-error>Can't be negative</mat-error>
+                } @else if (
+                  form.controls.daysTraining.hasError('positive') &&
+                  form.controls.daysTraining.touched
+                ) {
+                  <mat-error>Enter more than 0 days, or untick the appointment box above</mat-error>
                 }
               </mat-form-field>
               <div

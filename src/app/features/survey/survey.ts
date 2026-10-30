@@ -35,6 +35,7 @@ import {
   MIN_TIME_SLOTS,
   PLAYER_ID_PATTERN,
   requireMinTimes,
+  requirePositiveWhen,
   scrollToFirstInvalidControl,
 } from '../../core/validators/svs-submission.validators';
 import {
@@ -132,7 +133,30 @@ export class SurveyComponent {
   });
 
   constructor() {
+    // Days fields are disabled (so skipped by validation) whenever that day's appointment box is
+    // unticked, so "enabled" already means "asking for an appointment" here.
+    for (const days of [
+      this.form.controls.daysConstruction,
+      this.form.controls.daysResearch,
+      this.form.controls.daysTraining,
+    ]) {
+      days.addValidators(requirePositiveWhen(() => true));
+    }
+    this.form.controls.fc.addValidators(requirePositiveWhen(() => this.wantsConstruction()));
+    this.form.controls.rfc.addValidators(requirePositiveWhen(() => this.rfcRequired));
     this.loadForm();
+  }
+
+  /** Below FC10 rounds' upgrades are paid in plain FC only, so RFC is only required for a
+   *  Construction appointment on FC10 rounds. */
+  get rfcRequired(): boolean {
+    const form = this.openForm();
+    return this.wantsConstruction() && !!form && form.highestFcLevel >= 10;
+  }
+
+  private revalidateConstructionResources(): void {
+    this.form.controls.fc.updateValueAndValidity();
+    this.form.controls.rfc.updateValueAndValidity();
   }
 
   /**
@@ -146,6 +170,7 @@ export class SurveyComponent {
     try {
       const form = id ? await this.svsForms.getById(id) : null;
       this.openForm.set(form && formStatus(form) === 'open' ? form : null);
+      this.revalidateConstructionResources(); // rfcRequired depends on the round's FC level
     } catch (err) {
       console.error(err);
       this.openForm.set(null); // falls back to the "not available" message rather than hanging
@@ -236,6 +261,7 @@ export class SurveyComponent {
       this.form.controls.daysConstruction,
       this.form.controls.availableTimesConstruction,
     );
+    this.revalidateConstructionResources();
   }
 
   onWantsResearchChange(wants: boolean): void {

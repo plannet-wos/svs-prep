@@ -14,6 +14,14 @@ export function requireMinTimes(min: number) {
     (control.value?.length ?? 0) >= min ? null : { minTimes: true };
 }
 
+/** Asking for an appointment with nothing to spend is pointless, so an enabled days/FC/RFC field
+ *  must be above 0. Only applied while `active()` holds; call updateValueAndValidity() on the
+ *  control whenever the condition behind it changes. */
+export function requirePositiveWhen(active: () => boolean) {
+  return (control: { value: number | null }): ValidationErrors | null =>
+    !active() || (control.value ?? 0) > 0 ? null : { positive: true };
+}
+
 /** Must start with a 3-character alliance tag in brackets, e.g. "[HOC] plannet". */
 export const ALLIANCE_TAG_PATTERN = /^\[[A-Za-z0-9]{3}\]/;
 
